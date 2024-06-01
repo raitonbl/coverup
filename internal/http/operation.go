@@ -2,6 +2,7 @@ package internal
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/cucumber/godog"
 	"github.com/raitonbl/coverup/pkg"
 	"github.com/stretchr/testify/assert"
@@ -107,11 +108,19 @@ func (instance *Operation) withHttpResponseHeaders(headers *godog.Table) error {
 }
 
 func (instance *Operation) withResponseBodyURI(uri string) error {
-	if b, err := pkg.ReadURI(instance.Context.GetWorkDirectory(), uri); err == nil {
-		return instance.withHttpResponseBodyEqualTo(string(b))
+	var b []byte
+	var err error
+	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
+		b, err = pkg.ReadFromURL(instance.Context.GetResourcesHttpClient(), uri)
+	} else if strings.HasPrefix(uri, "file://") {
+		b, err = pkg.ReadFromFile(instance.Context.GetWorkDirectory(), uri)
 	} else {
+		return fmt.Errorf("unsupported URI: %s", uri)
+	}
+	if err != nil {
 		return err
 	}
+	return instance.withHttpResponseBodyEqualTo(string(b))
 }
 
 func (instance *Operation) withHttpResponseBody(body *godog.DocString) error {

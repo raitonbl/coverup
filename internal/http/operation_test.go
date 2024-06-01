@@ -25,7 +25,7 @@ func TestHttpRequest_with_single_scenario(t *testing.T) {
 
 func TestHttpRequest_with_multiple_scenarios(t *testing.T) {
 	InvokeDogAPIGetBreeds(t, JUnitOpts{
-		numberOfScenarios: 2,
+		numberOfScenarios: 3,
 		WorkDirectory:     "testdata/features",
 		featureName:       "Feature with multiple scenarios",
 		filename:          "feature_with_multiple_scenarios.feature",
@@ -35,8 +35,8 @@ func TestHttpRequest_with_multiple_scenarios(t *testing.T) {
 func InvokeDogAPIGetBreeds(t *testing.T, opts JUnitOpts) {
 	serverURL := "https://dogapi.dog/docs/api-v2/breeds"
 	httpClient := &SimpleResponseHttpClient{
-		fileURI:    "features/GetBreeds.json",
 		statusCode: 200,
+		fileURI:    "features/GetBreeds.json",
 		headers:    map[string]string{"content-type": "application/json"},
 	}
 	content, err := homeDirectory.ReadFile("testdata/features/" + opts.filename)
@@ -70,6 +70,11 @@ func InvokeDogAPIGetBreeds(t *testing.T, opts JUnitOpts) {
 			serverURL:     serverURL,
 			httpClient:    httpClient,
 			workDirectory: workDirectory,
+			resourceHttpClient: &EmbeddedResourceHttpClient{
+				statusCode: 200,
+				directory:  "features",
+				fs:         homeDirectory,
+			},
 		}),
 	}.Run()
 	assert.Equal(t, 0, status)

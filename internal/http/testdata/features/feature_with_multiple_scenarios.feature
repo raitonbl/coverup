@@ -38,7 +38,7 @@ Feature: GetBreads
                    }
                 }
                 """
-    Scenario: Has response body uri
+    Scenario: Has response body uri(File)
         Given a HttpRequest
         And the headers:
             | content-type  | application/json |
@@ -47,3 +47,12 @@ Feature: GetBreads
         And the response headers:
             | content-type  | application/json |
         And the response body uri is: file://GetBreeds.json
+    Scenario: Has response body uri(http)
+        Given a HttpRequest
+        And the headers:
+            | content-type  | application/json |
+        When GET "/breeds"
+        Then the response statusCode is 200
+        And the response headers:
+            | content-type  | application/json |
+        And the response body uri is: http://localhost:9999/GetBreeds.json

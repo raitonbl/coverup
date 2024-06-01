@@ -6,21 +6,14 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
-func ReadURI(directory, uri string) ([]byte, error) {
-	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
-		return readFromURL(uri)
-	} else if strings.HasPrefix(uri, "file://") {
-		return readFromFile(directory, uri)
-	} else {
-		return nil, fmt.Errorf("unsupported URI: %s", uri)
+func ReadFromURL(httpClient HttpClient, uri string) ([]byte, error) {
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return nil, err
 	}
-}
-
-func readFromURL(uri string) ([]byte, error) {
-	resp, err := http.Get(uri)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get content from %s: %w", uri, err)
 	}
@@ -31,7 +24,7 @@ func readFromURL(uri string) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-func readFromFile(directory string, uri string) ([]byte, error) {
+func ReadFromFile(directory string, uri string) ([]byte, error) {
 	path := uri[7:]
 	if directory != "" {
 		path = filepath.Join(directory, path)
