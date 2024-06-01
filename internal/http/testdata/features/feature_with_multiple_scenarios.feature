@@ -38,6 +38,7 @@ Feature: GetBreads
                    }
                 }
                 """
+
     Scenario: Has response body uri(File)
         Given a HttpRequest
         And the headers:
@@ -47,6 +48,7 @@ Feature: GetBreads
         And the response headers:
             | content-type  | application/json |
         And the response body uri is: file://GetBreeds.json
+
     Scenario: Has response body uri(http)
         Given a HttpRequest
         And the headers:
