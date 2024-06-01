@@ -1,4 +1,4 @@
-package internal
+package context
 
 import "github.com/raitonbl/coverup/pkg"
 

@@ -2,9 +2,10 @@ package internal
 
 import (
 	"github.com/cucumber/godog"
+	"github.com/raitonbl/coverup/internal/context"
 )
 
-func WithHttpRequest(context Context) func(*godog.ScenarioContext) {
+func WithHttpRequest(context context.Context) func(*godog.ScenarioContext) {
 	return func(s *godog.ScenarioContext) {
 		operation := &Operation{Context: context}
 		// Given Params

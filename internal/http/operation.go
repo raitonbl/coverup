@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/cucumber/godog"
+	"github.com/raitonbl/coverup/internal/context"
 	"github.com/raitonbl/coverup/pkg"
 	"github.com/stretchr/testify/assert"
 	"io"
@@ -12,7 +13,7 @@ import (
 )
 
 type Operation struct {
-	Context        Context
+	Context        context.Context
 	body           []byte
 	response       *http.Response
 	requestHeaders map[string]string

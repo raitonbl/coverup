@@ -9,18 +9,18 @@ import (
 	"testing"
 )
 
+//go:embed testdata/features/*
+var homeDirectory embed.FS
+
 type JUnitOpts struct {
 	numberOfScenarios int
 	featureName       string
 	filename          string
-	WorkDirectory     string
+	workDirectory     string
 }
 
-//go:embed testdata/features/*
-var homeDirectory embed.FS
-
 func TestHttpRequest_with_single_scenario(t *testing.T) {
-	InvokeDogAPIGetBreeds(t, JUnitOpts{featureName: "Feature with single scenario", filename: "feature_with_single_scenario.feature", numberOfScenarios: 1})
+	invokeDogAPIGetBreeds(t, JUnitOpts{featureName: "Feature with single scenario", filename: "feature_with_single_scenario.feature", numberOfScenarios: 1})
 }
 
 func TestHttpRequest_with_multiple_scenarios(m *testing.T) {
@@ -30,9 +30,9 @@ func TestHttpRequest_with_multiple_scenarios(m *testing.T) {
 	}
 	for _, filename := range seq {
 		m.Run(filename, func(t *testing.T) {
-			InvokeDogAPIGetBreeds(t, JUnitOpts{
+			invokeDogAPIGetBreeds(t, JUnitOpts{
 				numberOfScenarios: 3,
-				WorkDirectory:     "testdata/features",
+				workDirectory:     "testdata/features",
 				featureName:       "Feature with multiple scenarios",
 				filename:          filename,
 			})
@@ -40,7 +40,7 @@ func TestHttpRequest_with_multiple_scenarios(m *testing.T) {
 	}
 }
 
-func InvokeDogAPIGetBreeds(t *testing.T, opts JUnitOpts) {
+func invokeDogAPIGetBreeds(t *testing.T, opts JUnitOpts) {
 	serverURL := "https://dogapi.dog/docs/api-v2/breeds"
 	httpClient := &SimpleResponseHttpClient{
 		statusCode: 200,
@@ -63,7 +63,7 @@ func InvokeDogAPIGetBreeds(t *testing.T, opts JUnitOpts) {
 		},
 		Output: colors.Colored(os.Stdout),
 	}
-	workDirectory := opts.WorkDirectory
+	workDirectory := opts.workDirectory
 	if workDirectory == "" {
 		if w, prob := os.Getwd(); prob == nil {
 			workDirectory = w
