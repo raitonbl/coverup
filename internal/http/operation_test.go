@@ -23,13 +23,21 @@ func TestHttpRequest_with_single_scenario(t *testing.T) {
 	InvokeDogAPIGetBreeds(t, JUnitOpts{featureName: "Feature with single scenario", filename: "feature_with_single_scenario.feature", numberOfScenarios: 1})
 }
 
-func TestHttpRequest_with_multiple_scenarios(t *testing.T) {
-	InvokeDogAPIGetBreeds(t, JUnitOpts{
-		numberOfScenarios: 3,
-		WorkDirectory:     "testdata/features",
-		featureName:       "Feature with multiple scenarios",
-		filename:          "feature_with_multiple_scenarios.feature",
-	})
+func TestHttpRequest_with_multiple_scenarios(m *testing.T) {
+	seq := []string{
+		"feature_with_multiple_scenarios.feature",
+		"feature_with_multiple_scenarios_with_background.feature",
+	}
+	for _, filename := range seq {
+		m.Run(filename, func(t *testing.T) {
+			InvokeDogAPIGetBreeds(t, JUnitOpts{
+				numberOfScenarios: 3,
+				WorkDirectory:     "testdata/features",
+				featureName:       "Feature with multiple scenarios",
+				filename:          filename,
+			})
+		})
+	}
 }
 
 func InvokeDogAPIGetBreeds(t *testing.T, opts JUnitOpts) {
