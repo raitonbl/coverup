@@ -1,4 +1,4 @@
-Feature: GetBreaes
+Feature: GetBreeds
     Scenario: Has response body
         Given a HttpRequest
             And the headers:
