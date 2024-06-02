@@ -25,23 +25,24 @@ func WithHttpRequest(context context.Context) func(*godog.ScenarioContext) {
 		s.Then(`^the response header ([^ ]+) is (.+)$`, operation.withHttpResponseHeader)
 		s.Then(`^the response body uri is: ([^"]*)$`, operation.withResponseBodyURI)
 		// Then: Criteria > Body
-		s.Then(`^the \$(body\..*) matches "([^"]*)"$`, operation.withBodyPathMatches)
-		s.Then(`^the \$(body\..*) ends with "([^"]*)"$`, operation.withBodyPathEndsWith)
-		s.Then(`^the \$(body\..*) is equal to "([^"]*)"$`, operation.withBodyPathEqualTo)
-		s.Then(`^the \$(body\..*) is lesser than (\d+)$`, operation.withBodyPathLesserThan)
-		s.Then(`^the \$(body\..*) starts with "([^"]*)"$`, operation.withBodyPathStartsWith)
-		s.Then(`^the \$(body\..*) is greater than (\d+)$`, operation.withBodyPathGreaterThan)
-		s.Then(`^the \$(body\..*) is lesser or equal to (\d+)$`, operation.withBodyPathLesserOrEqualTo)
-		s.Then(`^the \$(body\..*) is greater or equal to (\d+)$`, operation.withBodyPathGreaterOrEqualTo)
-		// Then: Criteria > Headers
-		s.Then(`^the \$(headers\..*) ends with "([^"]*)"$`, operation.withHeaderEndsWith)
-		s.Then(`^the \$(headers\..*) is equal to "([^"]*)"$`, operation.withHeaderEqualTo)
-		s.Then(`^the \$(headers\..*) is lesser than (\d+)$`, operation.withHeaderLesserThan)
-		s.Then(`^the \$(headers\..*) starts with "([^"]*)"$`, operation.withHeaderStartsWith)
-		s.Then(`^the \$(headers\..*) is greater than (\d+)$`, operation.withHeaderGreaterThan)
-		s.Then(`^the \$(headers\..*) is lesser or equal to (\d+)$`, operation.withHeaderLesserOrEqualTo)
-		s.Then(`^the \$(headers\..*) is greater or equal to (\d+)$`, operation.withHeaderGreaterOrEqualTo)
+		s.Then(`^the \$body\.(.*) matches "([^"]*)"$`, operation.withBodyPathMatches)
+		s.Then(`^the \$body\.(.*) ends with "([^"]*)"$`, operation.withBodyPathEndsWith)
+		s.Then(`^the \$body\.(.*) is equal to "([^"]*)"`, operation.withBodyPathEqualTo)
+		s.Then(`^the \$body\.(.*) is lesser than (\d+)$`, operation.withBodyPathLesserThan)
+		s.Then(`^the \$body\.(.*) starts with "([^"]*)"$`, operation.withBodyPathStartsWith)
+		s.Then(`^the \$body\.(.*) is greater than (\d+)$`, operation.withBodyPathGreaterThan)
+		s.Then(`^the \$body\.(.*) is lesser or equal to (\d+)$`, operation.withBodyPathLesserOrEqualTo)
+		s.Then(`^the \$body\.(.*) is greater or equal to (\d+)$`, operation.withBodyPathGreaterOrEqualTo)
 
+		// Then: Criteria > Headers
+		s.Then(`^the \$headers\.(.*) ends with "([^"]*)"$`, operation.withHeaderEndsWith)
+		s.Then(`^the \$headers\.(.*) is equal to "([^"]*)"$`, operation.withHeaderEqualTo)
+		s.Then(`^the \$headers\.(.*) matches "([^"]*)"$`, operation.withHeaderPathMatches)
+		s.Then(`^the \$headers\.(.*) is lesser than (\d+)$`, operation.withHeaderLesserThan)
+		s.Then(`^the \$headers\.(.*) starts with "([^"]*)"$`, operation.withHeaderStartsWith)
+		s.Then(`^the \$headers\.(.*) is greater than (\d+)$`, operation.withHeaderGreaterThan)
+		s.Then(`^the \$headers\.(.*) is lesser or equal to (\d+)$`, operation.withHeaderLesserOrEqualTo)
+		s.Then(`^the \$headers\.(.*) is greater or equal to (\d+)$`, operation.withHeaderGreaterOrEqualTo)
 	}
 
 }

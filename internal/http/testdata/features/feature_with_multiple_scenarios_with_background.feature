@@ -1,4 +1,4 @@
-Feature: GetBreads
+Feature: GetBreeds
 
     Background: On Get Breeds
         Given a HttpRequest

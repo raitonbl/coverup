@@ -10,16 +10,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
-	"regexp"
 	"strings"
 )
 
 type Operation struct {
-	Context        context.Context
 	body           []byte
 	response       *http.Response
+	Context        context.Context
 	requestHeaders map[string]string
 }
+
+// HTTP Request Methods
 
 func (instance *Operation) withHttpRequest() error {
 	instance.requestHeaders = nil
@@ -41,30 +42,12 @@ func (instance *Operation) withRequestHeaders(headers *godog.Table) error {
 	return nil
 }
 
-func (instance *Operation) withGetMethod(url string) error {
-	//TODO LOG ignoring payload if set
-	return instance.doSendHttpRequest("GET", url, nil)
-}
-
-func (instance *Operation) withPostMethod(url string) error {
-	return instance.doSendHttpRequest("POST", url, instance.body)
-}
-
-func (instance *Operation) withPutMethod(url string) error {
-	return instance.doSendHttpRequest("PUT", url, instance.body)
-}
-
-func (instance *Operation) withPatchMethod(url string) error {
-	return instance.doSendHttpRequest("PATCH", url, instance.body)
-}
-
-func (instance *Operation) withDeleteMethod(url string) error {
-	//TODO LOG ignoring payload if set
-	return instance.doSendHttpRequest("DELETE", url, nil)
+func (instance *Operation) sendHttpRequest(method, url string) error {
+	return instance.doSendHttpRequest(method, url, instance.body)
 }
 
 func (instance *Operation) doSendHttpRequest(method, url string, payload []byte) error {
-	var body io.Reader = nil
+	var body io.Reader
 	if payload != nil {
 		body = bytes.NewReader(payload)
 	}
@@ -74,12 +57,10 @@ func (instance *Operation) doSendHttpRequest(method, url string, payload []byte)
 	}
 	req, err := http.NewRequest(method, serverURI, body)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating request: %w", err)
 	}
-	if instance.requestHeaders != nil {
-		for k, v := range instance.requestHeaders {
-			req.Header.Set(k, v)
-		}
+	for k, v := range instance.requestHeaders {
+		req.Header.Set(k, v)
 	}
 	httpClient := instance.Context.GetHttpClient()
 	if httpClient == nil {
@@ -87,25 +68,55 @@ func (instance *Operation) doSendHttpRequest(method, url string, payload []byte)
 	}
 	res, err := httpClient.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("sending request: %w", err)
 	}
 	instance.response = res
 	return nil
 }
 
+// Simplified HTTP Methods
+
+func (instance *Operation) withGetMethod(url string) error {
+	return instance.sendHttpRequest("GET", url)
+}
+
+func (instance *Operation) withPostMethod(url string) error {
+	return instance.sendHttpRequest("POST", url)
+}
+
+func (instance *Operation) withPutMethod(url string) error {
+	return instance.sendHttpRequest("PUT", url)
+}
+
+func (instance *Operation) withPatchMethod(url string) error {
+	return instance.sendHttpRequest("PATCH", url)
+}
+
+func (instance *Operation) withDeleteMethod(url string) error {
+	return instance.sendHttpRequest("DELETE", url)
+}
+
+// HTTP Response Verification Methods
+
 func (instance *Operation) withStatusCode(statusCode int) error {
-	assert.Equal(nil, statusCode, instance.response.StatusCode)
+	if instance.response.StatusCode != statusCode {
+		return fmt.Errorf("expected status code %d, got %d", statusCode, instance.response.StatusCode)
+	}
 	return nil
 }
 
 func (instance *Operation) withHttpResponseHeader(headerName, headerValue string) error {
-	assert.Equal(nil, headerValue, instance.response.Header.Get(headerName))
+	if instance.response.Header.Get(headerName) != headerValue {
+		return fmt.Errorf("expected header %s to be %s, got %s", headerName, headerValue, instance.response.Header.Get(headerName))
+	}
 	return nil
 }
 
 func (instance *Operation) withHttpResponseHeaders(headers *godog.Table) error {
 	for _, row := range headers.Rows {
-		assert.Equal(nil, row.Cells[1].Value, instance.response.Header.Get(row.Cells[0].Value))
+		if err := instance.withHttpResponseHeader(row.Cells[0].Value, row.Cells[1].Value); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -113,11 +124,12 @@ func (instance *Operation) withHttpResponseHeaders(headers *godog.Table) error {
 func (instance *Operation) withResponseBodyURI(uri string) error {
 	var b []byte
 	var err error
-	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
+	switch {
+	case strings.HasPrefix(uri, "http://"), strings.HasPrefix(uri, "https://"):
 		b, err = pkg.ReadFromURL(instance.Context.GetResourcesHttpClient(), uri)
-	} else if strings.HasPrefix(uri, "file://") {
+	case strings.HasPrefix(uri, "file://"):
 		b, err = pkg.ReadFromFile(instance.Context.GetWorkDirectory(), uri)
-	} else {
+	default:
 		return fmt.Errorf("unsupported URI: %s", uri)
 	}
 	if err != nil {
@@ -131,7 +143,7 @@ func (instance *Operation) withHttpResponseBody(body *godog.DocString) error {
 }
 
 func (instance *Operation) withHttpResponseBodyEqualTo(body string) error {
-	responseBody, err := io.ReadAll(instance.response.Body)
+	responseBody, err := instance.getResponseBody()
 	if err != nil {
 		return err
 	}
@@ -139,93 +151,7 @@ func (instance *Operation) withHttpResponseBodyEqualTo(body string) error {
 	return nil
 }
 
-func (instance *Operation) withBodyPathEqualTo(path, value string) error {
-	// Add logic to check if the body path equals the value
-	return nil
-}
-
-func (instance *Operation) withBodyPathStartsWith(path, value string) error {
-	// Add logic to check if the body path starts with the value
-	return nil
-}
-
-func (instance *Operation) withBodyPathEndsWith(path, value string) error {
-	// Add logic to check if the body path ends with the value
-	return nil
-}
-
-func (instance *Operation) withBodyPathGreaterOrEqualTo(path string, value int) error {
-	// Add logic to check if the body path is greater or equal to the value
-	return nil
-}
-
-func (instance *Operation) withBodyPathLesserOrEqualTo(path string, value int) error {
-	// Add logic to check if the body path is lesser or equal to the value
-	return nil
-}
-
-func (instance *Operation) withBodyPathGreaterThan(path string, value int) error {
-	// Add logic to check if the body path is greater or equal to the value
-	return nil
-}
-
-func (instance *Operation) withBodyPathLesserThano(path string, value int) error {
-	// Add logic to check if the body path is lesser or equal to the value
-	return nil
-}
-
-func (instance *Operation) withBodyPathMatches(path, pattern string) error {
-	// Add logic to check if the body path matches the regex pattern
-	re := regexp.MustCompile(pattern)
-	// Example of checking the pattern
-	if !re.MatchString("The") {
-		return fmt.Errorf("pattern does not match")
-	}
-	return nil
-}
-
-func (instance *Operation) withHeaderEqualTo(header, value string) error {
-	return isEqualTo(instance.extractHeaderFromResponse(header), value, func(v1, v2 any) error {
-		return fmt.Errorf("$header.%s=%v isn't equal to %v", header, v1, v2)
-	})
-}
-
-func (instance *Operation) withHeaderStartsWith(header, value string) error {
-	return startsWith(instance.extractHeaderFromResponse(header), value, func(v1, v2 string) error {
-		return fmt.Errorf("$header.%s=%v doesn't start with %v", header, v1, v2)
-	})
-}
-
-func (instance *Operation) withHeaderEndsWith(header, value string) error {
-	return endsWith(instance.extractHeaderFromResponse(header), value, func(v1, v2 string) error {
-		return fmt.Errorf("$header.%s=%v doesn't end with %v", header, v1, v2)
-	})
-}
-
-func (instance *Operation) withHeaderGreaterOrEqualTo(header string, value float64) error {
-	return isGreaterOrEqualTo(instance.extractHeaderFromResponse(header), value, func(v1 any, v2 float64) error {
-		return fmt.Errorf("$header.%s=%v isn't greater nor equal to %v", header, v1, v2)
-	})
-}
-
-func (instance *Operation) withHeaderLesserOrEqualTo(header string, value float64) error {
-	return isLesserOrEqualTo(instance.extractHeaderFromResponse(header), value, func(v1 any, v2 float64) error {
-		return fmt.Errorf("$header.%s=%v isn't lesser nor equal to %v", header, v1, v2)
-	})
-}
-
-func (instance *Operation) withHeaderGreaterThan(header string, value float64) error {
-	return isGreaterThan(instance.extractHeaderFromResponse(header), value, func(v1 any, v2 float64) error {
-		return fmt.Errorf("$header.%s=%v isn't greater than %v", header, v1, v2)
-	})
-}
-
-func (instance *Operation) withHeaderLesserThan(header string, value float64) error {
-	return isLesserThan(instance.extractHeaderFromResponse(header), value, func(v1 any, v2 float64) error {
-		return fmt.Errorf("$header.%s=%v isn't lesserr than %v", header, v1, v2)
-	})
-}
-
+// Helper for Header Verification
 func (instance *Operation) extractHeaderFromResponse(header string) func() (any, error) {
 	return func() (any, error) {
 		value := instance.response.Header.Get(header)
@@ -234,4 +160,151 @@ func (instance *Operation) extractHeaderFromResponse(header string) func() (any,
 		}
 		return value, nil
 	}
+}
+
+// Generic response verification
+
+func (instance *Operation) withResponseLinePartEqualTo(componentType, k, value string, extractValueFrom func() (any, error)) error {
+	return isEqualTo(extractValueFrom, value, func(v1, v2 any) error {
+		return fmt.Errorf("$%s.%s=%v isn't equal to %v", componentType, k, v1, v2)
+	})
+}
+
+func (instance *Operation) withResponseLinePartStartsWith(componentType, k, value string, extractValueFrom func() (any, error)) error {
+	return startsWith(extractValueFrom, value, func(v1, v2 string) error {
+		return fmt.Errorf("$%s.%s=%v doesn't start with %v", componentType, k, v1, v2)
+	})
+}
+
+func (instance *Operation) withResponseLinePartEndsWith(componentType, k, value string, extractValueFrom func() (any, error)) error {
+	return endsWith(extractValueFrom, value, func(v1, v2 string) error {
+		return fmt.Errorf("$%s.%s=%v doesn't end with %v", componentType, k, v1, v2)
+	})
+}
+
+func (instance *Operation) withResponseLinePartGreaterOrEqualTo(componentType, k string, value float64, extractValueFrom func() (any, error)) error {
+	return isGreaterOrEqualTo(extractValueFrom, value, func(v1 any, v2 float64) error {
+		return fmt.Errorf("$%s.%s=%v isn't greater nor equal to %v", componentType, k, v1, v2)
+	})
+}
+
+func (instance *Operation) withResponseLinePartLesserOrEqualTo(componentType, k string, value float64, extractValueFrom func() (any, error)) error {
+	return isLesserOrEqualTo(extractValueFrom, value, func(v1 any, v2 float64) error {
+		return fmt.Errorf("$%s.%s=%v isn't lesser nor equal to %v", componentType, k, v1, v2)
+	})
+}
+
+func (instance *Operation) withResponseLinePartGreaterThan(componentType, k string, value float64, extractValueFrom func() (any, error)) error {
+	return isGreaterThan(extractValueFrom, value, func(v1 any, v2 float64) error {
+		return fmt.Errorf("$%s.%s=%v isn't greater than %v", componentType, k, v1, v2)
+	})
+}
+
+func (instance *Operation) withResponseLinePartLesserThan(componentType, k string, value float64, extractValueFrom func() (any, error)) error {
+	return isLesserThan(extractValueFrom, value, func(v1 any, v2 float64) error {
+		return fmt.Errorf("$%s.%s=%v isn't lesser than %v", componentType, k, v1, v2)
+	})
+}
+
+func (instance *Operation) withResponseLinePartMatchesPattern(componentType, k string, value string, extractValueFrom func() (any, error)) error {
+	return matchesPattern(extractValueFrom, value, func(v1 string, v2 string) error {
+		return fmt.Errorf("$%s.%s=%v doesn't match the pattern %v", componentType, k, v1, v2)
+	})
+}
+
+// Generic Verification Method
+
+func (instance *Operation) withHeaderEqualTo(header, value string) error {
+	return instance.withResponseLinePartEqualTo("headers", header, value, instance.extractHeaderFromResponse(header))
+}
+
+func (instance *Operation) withHeaderStartsWith(header, value string) error {
+	return instance.withResponseLinePartStartsWith("headers", header, value, instance.extractHeaderFromResponse(header))
+}
+
+func (instance *Operation) withHeaderEndsWith(header, value string) error {
+	return instance.withResponseLinePartEndsWith("headers", header, value, instance.extractHeaderFromResponse(header))
+}
+
+func (instance *Operation) withHeaderPathMatches(header, value string) error {
+	return instance.withResponseLinePartMatchesPattern("headers", header, value, instance.extractHeaderFromResponse(header))
+}
+
+// Simplified Body Path Verification Methods
+func (instance *Operation) getResponseBody() ([]byte, error) {
+	if instance.body == nil {
+		binary, err := io.ReadAll(instance.response.Body)
+		if err != nil {
+			return nil, err
+		}
+		instance.body = binary
+	}
+	return instance.body, nil
+}
+
+func (instance *Operation) extractPathFromResponse(d string) func() (any, error) {
+	return func() (any, error) {
+		binary, err := instance.getResponseBody()
+		if err != nil {
+			return nil, err
+		}
+		if len(binary) == 0 {
+			return nil, nil
+		}
+		contentType := instance.response.Header.Get("content-type")
+		if contentType == "" {
+			contentType = "application/json"
+		}
+		return extractValueFromResponsePath(contentType, d, binary)
+	}
+}
+
+func (instance *Operation) withBodyPathEqualTo(path, value string) error {
+	return instance.withResponseLinePartEqualTo("body", path, value, instance.extractPathFromResponse(path))
+}
+
+func (instance *Operation) withBodyPathStartsWith(path, value string) error {
+	return instance.withResponseLinePartStartsWith("body", path, value, instance.extractPathFromResponse(path))
+}
+
+func (instance *Operation) withBodyPathEndsWith(path, value string) error {
+	return instance.withResponseLinePartEndsWith("body", path, value, instance.extractPathFromResponse(path))
+}
+
+func (instance *Operation) withBodyPathMatches(path, pattern string) error {
+	return instance.withResponseLinePartMatchesPattern("body", path, pattern, instance.extractPathFromResponse(path))
+}
+
+// Numeric Verification Methods
+
+func (instance *Operation) withHeaderGreaterOrEqualTo(header string, value float64) error {
+	return instance.withResponseLinePartGreaterOrEqualTo("headers", header, value, instance.extractHeaderFromResponse(header))
+}
+
+func (instance *Operation) withHeaderLesserOrEqualTo(header string, value float64) error {
+	return instance.withResponseLinePartLesserOrEqualTo("headers", header, value, instance.extractHeaderFromResponse(header))
+}
+
+func (instance *Operation) withHeaderGreaterThan(header string, value float64) error {
+	return instance.withResponseLinePartGreaterThan("headers", header, value, instance.extractHeaderFromResponse(header))
+}
+
+func (instance *Operation) withHeaderLesserThan(header string, value float64) error {
+	return instance.withResponseLinePartLesserThan("headers", header, value, instance.extractHeaderFromResponse(header))
+}
+
+func (instance *Operation) withBodyPathGreaterOrEqualTo(path string, value float64) error {
+	return instance.withResponseLinePartGreaterOrEqualTo("body", path, value, instance.extractPathFromResponse(path))
+}
+
+func (instance *Operation) withBodyPathLesserOrEqualTo(path string, value float64) error {
+	return instance.withResponseLinePartLesserOrEqualTo("body", path, value, instance.extractPathFromResponse(path))
+}
+
+func (instance *Operation) withBodyPathGreaterThan(path string, value float64) error {
+	return instance.withResponseLinePartGreaterThan("body", path, value, instance.extractPathFromResponse(path))
+}
+
+func (instance *Operation) withBodyPathLesserThan(path string, value float64) error {
+	return instance.withResponseLinePartLesserThan("body", path, value, instance.extractPathFromResponse(path))
 }

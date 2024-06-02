@@ -1,4 +1,4 @@
-Feature: GetBreads
+Feature: GetBreeds
     Scenario: No query parameters
         Given a HttpRequest
             And the headers:

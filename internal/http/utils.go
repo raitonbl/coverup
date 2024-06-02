@@ -3,9 +3,12 @@ package internal
 import (
 	"fmt"
 	"github.com/thoas/go-funk"
+	"regexp"
 	"strconv"
 	"strings"
 )
+
+type ArithmeticComparison func(valueExtractor func() (any, error), compareTo float64, otherwiseThrow func(v1 any, v2 float64) error) error
 
 func isLesserThan(valueExtractor func() (any, error), compareTo float64, otherwiseThrow func(v1 any, v2 float64) error) error {
 	return compareValue(valueExtractor, compareTo, func(a, b float64) bool { return a < b }, "is lesser than", otherwiseThrow)
@@ -32,6 +35,13 @@ func isEqualTo(valueExtractor func() (any, error), compareTo any, otherwiseThrow
 		return otherwiseThrow(value, compareTo)
 	}
 	return nil
+}
+
+func matchesPattern(valueExtractor func() (any, error), compareTo string, otherwiseThrow func(v1 string, v2 string) error) error {
+	return withStringPredicate(valueExtractor, compareTo, func(valueOf, pattern string) bool {
+		re := regexp.MustCompile(pattern)
+		return re.MatchString(valueOf)
+	}, otherwiseThrow)
 }
 
 func startsWith(valueExtractor func() (any, error), compareTo string, otherwiseThrow func(v1, v2 string) error) error {
