@@ -8,3 +8,5 @@ Feature in backlog:
 * Schema Validation
 * Entities and identity support
 * Placeholders support
+* Then wait
+* Http Request with timeout
