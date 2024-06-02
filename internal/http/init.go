@@ -5,7 +5,7 @@ import (
 	"github.com/raitonbl/coverup/internal/context"
 )
 
-func WithHttpRequest(context context.Context) func(*godog.ScenarioContext) {
+func New(context context.Context) func(*godog.ScenarioContext) {
 	return func(s *godog.ScenarioContext) {
 		operation := &Operation{Context: context}
 		// Given Params
@@ -33,7 +33,6 @@ func WithHttpRequest(context context.Context) func(*godog.ScenarioContext) {
 		s.Then(`^the \$body\.(.*) is greater than (\d+)$`, operation.withBodyPathGreaterThan)
 		s.Then(`^the \$body\.(.*) is lesser or equal to (\d+)$`, operation.withBodyPathLesserOrEqualTo)
 		s.Then(`^the \$body\.(.*) is greater or equal to (\d+)$`, operation.withBodyPathGreaterOrEqualTo)
-
 		// Then: Criteria > Headers
 		s.Then(`^the \$headers\.(.*) ends with "([^"]*)"$`, operation.withHeaderEndsWith)
 		s.Then(`^the \$headers\.(.*) is equal to "([^"]*)"$`, operation.withHeaderEqualTo)
@@ -44,5 +43,4 @@ func WithHttpRequest(context context.Context) func(*godog.ScenarioContext) {
 		s.Then(`^the \$headers\.(.*) is lesser or equal to (\d+)$`, operation.withHeaderLesserOrEqualTo)
 		s.Then(`^the \$headers\.(.*) is greater or equal to (\d+)$`, operation.withHeaderGreaterOrEqualTo)
 	}
-
 }

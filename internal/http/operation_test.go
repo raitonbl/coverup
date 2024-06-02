@@ -84,7 +84,7 @@ func invokeDogAPIGetBreed(t *testing.T, opts JUnitOpts) {
 	status := godog.TestSuite{
 		TestSuiteInitializer: nil,
 		Options:              &goDogOpts,
-		ScenarioInitializer: WithHttpRequest(&MockContext{
+		ScenarioInitializer: New(&MockContext{
 			serverURL:     serverURL,
 			httpClient:    httpClient,
 			workDirectory: workDirectory,
@@ -144,7 +144,7 @@ func invokeDogAPIGetBreeds(t *testing.T, opts JUnitOpts) {
 	status := godog.TestSuite{
 		TestSuiteInitializer: nil,
 		Options:              &goDogOpts,
-		ScenarioInitializer: WithHttpRequest(&MockContext{
+		ScenarioInitializer: New(&MockContext{
 			serverURL:     serverURL,
 			httpClient:    httpClient,
 			workDirectory: workDirectory,
