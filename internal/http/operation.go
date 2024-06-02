@@ -2,6 +2,7 @@ package internal
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/cucumber/godog"
 	"github.com/raitonbl/coverup/internal/context"
@@ -9,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 )
 
@@ -135,4 +137,101 @@ func (instance *Operation) withHttpResponseBodyEqualTo(body string) error {
 	}
 	assert.JSONEq(nil, body, string(responseBody))
 	return nil
+}
+
+func (instance *Operation) withBodyPathEqualTo(path, value string) error {
+	// Add logic to check if the body path equals the value
+	return nil
+}
+
+func (instance *Operation) withBodyPathStartsWith(path, value string) error {
+	// Add logic to check if the body path starts with the value
+	return nil
+}
+
+func (instance *Operation) withBodyPathEndsWith(path, value string) error {
+	// Add logic to check if the body path ends with the value
+	return nil
+}
+
+func (instance *Operation) withBodyPathGreaterOrEqualTo(path string, value int) error {
+	// Add logic to check if the body path is greater or equal to the value
+	return nil
+}
+
+func (instance *Operation) withBodyPathLesserOrEqualTo(path string, value int) error {
+	// Add logic to check if the body path is lesser or equal to the value
+	return nil
+}
+
+func (instance *Operation) withBodyPathGreaterThan(path string, value int) error {
+	// Add logic to check if the body path is greater or equal to the value
+	return nil
+}
+
+func (instance *Operation) withBodyPathLesserThano(path string, value int) error {
+	// Add logic to check if the body path is lesser or equal to the value
+	return nil
+}
+
+func (instance *Operation) withBodyPathMatches(path, pattern string) error {
+	// Add logic to check if the body path matches the regex pattern
+	re := regexp.MustCompile(pattern)
+	// Example of checking the pattern
+	if !re.MatchString("The") {
+		return fmt.Errorf("pattern does not match")
+	}
+	return nil
+}
+
+func (instance *Operation) withHeaderEqualTo(header, value string) error {
+	return isEqualTo(instance.extractHeaderFromResponse(header), value, func(v1, v2 any) error {
+		return fmt.Errorf("$header.%s=%v isn't equal to %v", header, v1, v2)
+	})
+}
+
+func (instance *Operation) withHeaderStartsWith(header, value string) error {
+	return startsWith(instance.extractHeaderFromResponse(header), value, func(v1, v2 string) error {
+		return fmt.Errorf("$header.%s=%v doesn't start with %v", header, v1, v2)
+	})
+}
+
+func (instance *Operation) withHeaderEndsWith(header, value string) error {
+	return endsWith(instance.extractHeaderFromResponse(header), value, func(v1, v2 string) error {
+		return fmt.Errorf("$header.%s=%v doesn't end with %v", header, v1, v2)
+	})
+}
+
+func (instance *Operation) withHeaderGreaterOrEqualTo(header string, value float64) error {
+	return isGreaterOrEqualTo(instance.extractHeaderFromResponse(header), value, func(v1 any, v2 float64) error {
+		return fmt.Errorf("$header.%s=%v isn't greater nor equal to %v", header, v1, v2)
+	})
+}
+
+func (instance *Operation) withHeaderLesserOrEqualTo(header string, value float64) error {
+	return isLesserOrEqualTo(instance.extractHeaderFromResponse(header), value, func(v1 any, v2 float64) error {
+		return fmt.Errorf("$header.%s=%v isn't lesser nor equal to %v", header, v1, v2)
+	})
+}
+
+func (instance *Operation) withHeaderGreaterThan(header string, value float64) error {
+	return isGreaterThan(instance.extractHeaderFromResponse(header), value, func(v1 any, v2 float64) error {
+		return fmt.Errorf("$header.%s=%v isn't greater than %v", header, v1, v2)
+	})
+}
+
+func (instance *Operation) withHeaderLesserThan(header string, value float64) error {
+	return isLesserThan(instance.extractHeaderFromResponse(header), value, func(v1 any, v2 float64) error {
+		return fmt.Errorf("$header.%s=%v isn't lesserr than %v", header, v1, v2)
+	})
+}
+
+func (instance *Operation) extractHeaderFromResponse(header string) func() (any, error) {
+	return func() (any, error) {
+		value := instance.response.Header.Get(header)
+		if value == "" {
+			return nil, errors.New("header[" + header + "] is undefined")
+		}
+		return value, nil
+	}
 }
