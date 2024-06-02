@@ -88,7 +88,7 @@ func (instance *SimpleResponseHttpClient) Do(req *http.Request) (*http.Response,
 	}
 	content := instance.content
 	if content == nil && instance.fileURI != "" {
-		if c, err := homeDirectory.ReadFile("testdata/" + instance.fileURI); err == nil {
+		if c, err := dogsApiHomeDirectory.ReadFile("testdata/" + instance.fileURI); err == nil {
 			content = c
 		} else {
 			return nil, err

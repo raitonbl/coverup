@@ -9,8 +9,8 @@ import (
 	"testing"
 )
 
-//go:embed testdata/features/*
-var homeDirectory embed.FS
+//go:embed testdata/features/dogs-api/*
+var dogsApiHomeDirectory embed.FS
 
 type JUnitOpts struct {
 	numberOfScenarios int
@@ -32,7 +32,7 @@ func TestHttpRequest_with_multiple_scenarios(m *testing.T) {
 		m.Run(filename, func(t *testing.T) {
 			invokeDogAPIGetBreeds(t, JUnitOpts{
 				numberOfScenarios: 3,
-				workDirectory:     "testdata/features",
+				workDirectory:     "testdata/features/dogs-api",
 				featureName:       "Feature with multiple scenarios",
 				filename:          filename,
 			})
@@ -49,7 +49,7 @@ func invokeDogAPIGetBreed(t *testing.T, opts JUnitOpts) {
 	serverURL := "https://dogapi.dog/docs/api-v2/breeds/" + id
 	httpClient := &SimpleResponseHttpClient{
 		statusCode: 200,
-		fileURI:    "features/GetBreed.json",
+		fileURI:    "features/dogs-api/GetBreed.json",
 		headers: map[string]string{
 			"content-type":          "application/json",
 			"x-ratelimit-remaining": "2",
@@ -57,7 +57,7 @@ func invokeDogAPIGetBreed(t *testing.T, opts JUnitOpts) {
 			"x-ratelimit-reset":     "1625074801",
 		},
 	}
-	content, err := homeDirectory.ReadFile("testdata/features/" + opts.filename)
+	content, err := dogsApiHomeDirectory.ReadFile("testdata/features/dogs-api/" + opts.filename)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,8 +90,8 @@ func invokeDogAPIGetBreed(t *testing.T, opts JUnitOpts) {
 			workDirectory: workDirectory,
 			resourceHttpClient: &EmbeddedResourceHttpClient{
 				statusCode: 200,
-				directory:  "features",
-				fs:         homeDirectory,
+				directory:  "features/dogs-api/",
+				fs:         dogsApiHomeDirectory,
 			},
 		}),
 	}.Run()
@@ -114,10 +114,10 @@ func invokeDogAPIGetBreeds(t *testing.T, opts JUnitOpts) {
 	serverURL := "https://dogapi.dog/docs/api-v2/breeds"
 	httpClient := &SimpleResponseHttpClient{
 		statusCode: 200,
-		fileURI:    "features/GetBreeds.json",
+		fileURI:    "features/dogs-api/GetBreeds.json",
 		headers:    map[string]string{"content-type": "application/json"},
 	}
-	content, err := homeDirectory.ReadFile("testdata/features/" + opts.filename)
+	content, err := dogsApiHomeDirectory.ReadFile("testdata/features/dogs-api/" + opts.filename)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,8 +150,8 @@ func invokeDogAPIGetBreeds(t *testing.T, opts JUnitOpts) {
 			workDirectory: workDirectory,
 			resourceHttpClient: &EmbeddedResourceHttpClient{
 				statusCode: 200,
-				directory:  "features",
-				fs:         homeDirectory,
+				directory:  "features/dogs-api",
+				fs:         dogsApiHomeDirectory,
 			},
 		}),
 	}.Run()
