@@ -44,3 +44,12 @@ func New(context context.Context) func(*godog.ScenarioContext) {
 		s.Then(`^the \$headers\.(.*) is greater or equal to (\d+)$`, operation.withHeaderGreaterOrEqualTo)
 	}
 }
+
+func NewV2(context context.Context) func(*godog.ScenarioContext) {
+	return func(s *godog.ScenarioContext) {
+		operation := &Builder{context: context}
+		// Given Params
+		s.Given(`^a HttpRequest$`, operation.withHttpRequest)
+		s.Given(`^a HttpRequest <(.*)>$`, operation.withHttpRequest)
+	}
+}
