@@ -12,13 +12,21 @@ func NewV2(ctx context.Context) func(*godog.ScenarioContext) {
 		b := context.New(ctx)
 		// Given Params
 		s.Given(`^a HttpRequest$`, http.CreateHttpRequest(b))
-		s.Given(`^a HttpRequest <(.*)>$`, http.CreateHttpRequestAndAlias(b))
-		s.Given(`^the headers:$`, http.CreateHttpRequestHeaders(b))
+		s.Given(`^a HttpRequest <(.*)>$`, http.CreateHttpRequestWithAlias(b))
+		s.Given(`^the headers:$`, http.SetRequestHeaders(b))
 		// When
 		methods := []string{"OPTIONS", "HEAD", "GET", "PUT", "POST", "PATCH", "DELETE"}
 		for _, method := range methods {
-			f := http.CreateHttpRequestOperation(b, method)
+			f := http.SetRequestOperation(b, method)
 			s.When(fmt.Sprintf(`^Operation %s "([^"]*)"$`, method), f)
 		}
+		s.Given(`^body is:$`, http.SetRequestBody(b))
+		s.Given(`^body is file://(.+)$`, http.SetRequestBodyFromURI(b, "file"))
+		s.Given(`^body is http://(.+)$`, http.SetRequestBodyFromURI(b, "http"))
+		s.Given(`^body is https://(.+)$`, http.SetRequestBodyFromURI(b, "https"))
+		s.Given(`^the body is:$`, http.SetRequestBody(b))
+		s.Given(`^the body is file://(.+)$`, http.SetRequestBodyFromURI(b, "file"))
+		s.Given(`^the body is http://(.+)$`, http.SetRequestBodyFromURI(b, "http"))
+		s.Given(`^the body is https://(.+)$`, http.SetRequestBodyFromURI(b, "https"))
 	}
 }

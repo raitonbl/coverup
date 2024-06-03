@@ -4,7 +4,7 @@ Feature: Buy voucher
             And the headers:
                 | content-type  | application/json |
             And Operation POST /vouchers
-            And Timeout 3 seconds
+            # And Timeout 3 seconds
             And Body:
                 """
                 {

@@ -1,13 +1,13 @@
 package context
 
 import (
-	"errors"
 	"fmt"
 	"github.com/raitonbl/coverup/pkg"
 	"regexp"
+	"strings"
 )
 
-var valueRegexp = regexp.MustCompile(`\{\{([^.]+)\.([^.]+)\.(.+?)\}\}`)
+var valueRegexp = regexp.MustCompile(`{{\s*([\w.]+)\s*}}`)
 
 type Builder struct {
 	context    Context
@@ -47,47 +47,65 @@ func (instance *Builder) WithComponent(componentType string, ptr Component, alia
 	}
 	return nil
 }
-
-func (instance *Builder) ResolveOrGetValue(p string) (any, error) {
-	var prob error
-	r := valueRegexp.ReplaceAllStringFunc(p, func(currentValue string) string {
-		s := valueRegexp.FindStringSubmatch(currentValue)
-		if len(s) == 0 {
-			return currentValue
-		}
-		if len(s) != 4 {
-			prob = errors.New("cannot resolve " + p)
-			return ""
-		}
-		// Extract the captured groups
-		componentType := s[1]
-		componentId := s[2]
-		path := s[3]
-
-		components, hasValue := instance.aliases[componentType]
-		if !hasValue {
-			prob = errors.New("Component " + componentType + "." + componentId + " has not been defined yet")
-			return ""
-		}
-		component, hasValue := components[componentId]
-		if !hasValue {
-			prob = errors.New("Component " + componentType + "." + componentId + " has not been defined yet")
-			return ""
-		}
-		valueOf, err := component.GetPathValue(path)
-		if err != nil {
-			prob = err
-			return ""
-		}
-		return fmt.Sprintf("%v", valueOf)
-	})
-	if prob != nil {
-		return nil, prob
+func (instance *Builder) GetValue(src string) (any, error) {
+	matches := valueRegexp.FindAllStringSubmatch(src, -1)
+	if len(matches) == 0 {
+		return src, nil
 	}
-	return r, nil
+	cache := make(map[string]string)
+	parsedValue := src
+	for _, match := range matches {
+		if len(match) <= 1 {
+			continue
+		}
+		key := match[1]
+		expr := match[0]
+		v, err := instance.getValueFromExpression(key, expr, cache)
+		if err != nil {
+			return nil, err
+		}
+		parsedValue = strings.ReplaceAll(parsedValue, expr, v)
+	}
+
+	return parsedValue, nil
 }
 
-// TODO: ALIGN WITH CONTEXT
+func (instance *Builder) getValueFromExpression(key, expr string, cache map[string]string) (string, error) {
+	if fromCache, containsKey := cache[key]; containsKey {
+		return fromCache, nil
+	}
+	arr := strings.Split(key, ".")
+	if len(arr) < 3 {
+		return "", fmt.Errorf(`expression %s is unresolvable`, expr)
+	}
+	componentType, componentId, path := arr[0], arr[1], strings.Join(arr[2:], ".")
+	component, err := instance.getComponentOrElseThrow(componentType, componentId)
+	if err != nil {
+		return "", err
+	}
+	valueOf, err := component.GetPathValue(path)
+	if err != nil {
+		return "", err
+	}
+	v := fmt.Sprintf("%v", valueOf)
+	cache[key] = v
+
+	return v, nil
+}
+
+func (instance *Builder) getComponentOrElseThrow(componentType, componentId string) (Component, error) {
+	components, hasValue := instance.aliases[componentType]
+	if !hasValue {
+		return nil, fmt.Errorf("component %s.%s has not been defined yet", componentType, componentId)
+	}
+
+	component, hasValue := components[componentId]
+	if !hasValue {
+		return nil, fmt.Errorf("component %s.%s has not been defined yet", componentType, componentId)
+	}
+
+	return component, nil
+}
 
 func (instance *Builder) GetServerURL() string {
 	return instance.context.GetServerURL()
