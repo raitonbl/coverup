@@ -3,7 +3,7 @@ Feature: Buy voucher
         Given a HttpRequest <SendVoucherRequest>
             And the headers:
                 | content-type  | application/json |
-            And Resource POST /vouchers
+            And Operation POST /vouchers
             And Timeout 3 seconds
             And Body:
                 """
@@ -26,7 +26,7 @@ Feature: Buy voucher
             And Server https://www.api.psn.co.uk
             And the headers:
                 | content-type  | application/json |
-            And Resource GET /vouchers/{{HttpRequest.SendVoucherRequest.Response.Body.id}}
+            And Operation GET /vouchers/{{HttpRequest.SendVoucherRequest.Response.Body.id}}
         Then the response statusCode is 200
             And the $body complies with schema file://psn-response-schema
             And the $body.id is equal to {{HttpRequest.SendVoucherRequest.Response.Body.id}}

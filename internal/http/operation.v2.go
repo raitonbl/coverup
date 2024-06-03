@@ -2,15 +2,20 @@ package internal
 
 import (
 	"fmt"
+	"github.com/cucumber/godog"
 	"github.com/raitonbl/coverup/internal/context"
+	"strings"
 )
 
+const componentType = "HttpRequest"
+
 type Request struct {
-	method   string
-	url      string
-	body     []byte
-	response *Response
-	headers  map[string]string
+	method    string
+	serverURL string
+	uri       string
+	body      []byte
+	response  *Response
+	headers   map[string]string
 }
 
 type Response struct {
@@ -19,27 +24,62 @@ type Response struct {
 	headers    map[string]string
 }
 
-type Builder struct {
-	request  *Request
-	context  context.Context
-	requests map[string]Request
-}
-
-func (instance *Builder) withHttpRequest() error {
-	return instance.withHttpRequestAndAlias("")
-}
-
-func (instance *Builder) withHttpRequestAndAlias(name string) error {
-	req := Request{
-		headers: make(map[string]string),
+func CreateHttpRequest(instance *context.Builder) func(string) error {
+	f := CreateHttpRequestAndAlias(instance)
+	return func(s string) error {
+		return f(s)
 	}
-	if name != "" {
-		_, hasValue := instance.requests[name]
-		if hasValue {
-			return fmt.Errorf("HttpRequest with alias %s cannot be defined more than once", name)
+}
+
+func CreateHttpRequestAndAlias(instance *context.Builder) func(string) error {
+	return func(alias string) error {
+		return instance.WithComponent(componentType, &Request{
+			headers: make(map[string]string),
+		}, alias)
+	}
+}
+
+func CreateHttpRequestHeaders(instance *context.Builder) func(*godog.Table) error {
+	return func(table *godog.Table) error {
+		var req, err = getRequest(instance)
+		if err != nil {
+			return err
 		}
-		instance.requests[name] = req
+		if req.headers == nil {
+			req.headers = make(map[string]string)
+		}
+		for _, row := range table.Rows {
+			req.headers[row.Cells[0].Value] = row.Cells[1].Value
+		}
+		return nil
 	}
-	instance.request = &req
-	return nil
+}
+
+func CreateHttpRequestOperation(instance *context.Builder, method string) func(string) error {
+	return func(url string) error {
+		var req, err = getRequest(instance)
+		if err != nil {
+			return err
+		}
+		if strings.HasPrefix(url, "/") {
+			if req.serverURL == "" {
+				req.serverURL = instance.GetServerURL()
+			}
+			req.uri = url
+		} else {
+			req.uri = ""
+			req.serverURL = url
+		}
+		req.method = method
+		return nil
+	}
+}
+
+func getRequest(instance *context.Builder) (*Request, error) {
+	valueOf := instance.GetComponent(componentType, "")
+	if r, isHttpRequest := valueOf.(*Request); isHttpRequest {
+		return r, nil
+	} else {
+		return nil, fmt.Errorf("before setting %s.headers, please define %s", componentType, componentType)
+	}
 }
