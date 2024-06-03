@@ -9,21 +9,6 @@ import (
 
 const componentType = "HttpRequest"
 
-type Request struct {
-	method    string
-	serverURL string
-	uri       string
-	body      []byte
-	response  *Response
-	headers   map[string]string
-}
-
-type Response struct {
-	statusCode int
-	body       []byte
-	headers    map[string]string
-}
-
 func CreateHttpRequest(instance *context.Builder) func(string) error {
 	f := CreateHttpRequestAndAlias(instance)
 	return func(s string) error {

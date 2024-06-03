@@ -38,7 +38,6 @@ func extractJSONPathValue(binary []byte, expr string) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	array := funk.FlatMap(results, func(value []reflect.Value) []any {
 		return funk.Map(value, func(each reflect.Value) any {
 			return each.Interface()
