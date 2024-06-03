@@ -21,12 +21,12 @@ func NewV2(ctx context.Context) func(*godog.ScenarioContext) {
 			s.When(fmt.Sprintf(`^Operation %s "([^"]*)"$`, method), f)
 		}
 		s.Given(`^body is:$`, http.SetRequestBody(b))
-		s.Given(`^body is file://(.+)$`, http.SetRequestBodyFromURI(b, "file"))
-		s.Given(`^body is http://(.+)$`, http.SetRequestBodyFromURI(b, "http"))
-		s.Given(`^body is https://(.+)$`, http.SetRequestBodyFromURI(b, "https"))
-		s.Given(`^the body is:$`, http.SetRequestBody(b))
-		s.Given(`^the body is file://(.+)$`, http.SetRequestBodyFromURI(b, "file"))
-		s.Given(`^the body is http://(.+)$`, http.SetRequestBodyFromURI(b, "http"))
-		s.Given(`^the body is https://(.+)$`, http.SetRequestBodyFromURI(b, "https"))
+		array := []string{"file", "http", "https"}
+		for _, schemaType := range array {
+			f := http.SetRequestBodyFromURI(b, schemaType)
+			s.Given(fmt.Sprintf(`^body is %s://(.+)$`, schemaType), f)
+			s.Given(fmt.Sprintf(`^the body is %s://(.+)$`, schemaType), f)
+
+		}
 	}
 }
