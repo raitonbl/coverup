@@ -12,8 +12,9 @@ Feature: Buy voucher
                     "promo-code": "raitonbl.com"
                 }
                 """
+        When submitting HttpRequest
         Then the response status code is 200
-            And the {{HttpRequest.SendVoucherRequest.StatusCode}} is 200
+            And the {{HttpRequest.SendVoucherRequest}} response status code is 200
             And the $body complies with schema file://response.schema.json
             And the $body.benefit is equal to "PSN 100 UK"
             And the $body.price.amount is equal to 85

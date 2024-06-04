@@ -6,7 +6,7 @@ import (
 	"github.com/raitonbl/coverup/internal/context"
 )
 
-const namedHttpRequestRegex = "{{\\sHttpRequest.(.+)\\s}}"
+const namedHttpRequestRegex = `\{\{HttpRequest\.(\w+)\}\}`
 
 var schemas = []string{"file", "http", "https"}
 var methods = []string{"OPTIONS", "HEAD", "GET", "PUT", "POST", "PATCH", "DELETE"}
@@ -18,8 +18,8 @@ func Configure(ctx context.Context, scenarioContext *godog.ScenarioContext) erro
 	scenarioContext.Given(`^a HttpRequest named (.+)$`, CreateHttpRequestWithAlias(b))
 	scenarioContext.Step(`^the headers:$`, SetRequestHeaders(b))
 	scenarioContext.Step(`^(?i)body is:$`, SetRequestBody(b))
-	scenarioContext.Then(`^(?i)submits HttpRequest$`, SubmitsHttpRequest(b))
-	scenarioContext.Then(fmt.Sprintf(`^submits %s`, namedHttpRequestRegex),
+	scenarioContext.When(`^(?i)submitting HttpRequest$`, SubmitsHttpRequest(b))
+	scenarioContext.When(fmt.Sprintf(`^(?i)submitting %s`, namedHttpRequestRegex),
 		SubmitsHttpRequestWhenAlias(b))
 	for _, method := range methods {
 		scenarioContext.Step(`^(?i)operation `+method+` (\/[^\s]*|https?://[^\s]+)$`, SetRequestOperation(b, method))
