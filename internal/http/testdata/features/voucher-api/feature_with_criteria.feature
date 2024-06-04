@@ -5,14 +5,14 @@ Feature: Buy voucher
                 | content-type  | application/json |
             And operation POST /vouchers
             # And Timeout 3 seconds
-            And body:
+            And body is:
                 """
                 {
                     "benefit": "PSN 100 UK",
                     "promo-code": "raitonbl.com"
                 }
                 """
-        Then the response statusCode is 200
+        Then the response status code is 200
             And the {{HttpRequest.SendVoucherRequest.StatusCode}} is 200
             And the $body complies with schema file://response.schema.json
             And the $body.benefit is equal to "PSN 100 UK"
