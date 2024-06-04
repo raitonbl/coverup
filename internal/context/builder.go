@@ -42,9 +42,8 @@ func (instance *Builder) WithComponent(componentType string, ptr Component, alia
 			return fmt.Errorf("%s with alias %s cannot be defined more than once", componentType, alias)
 		}
 		instance.aliases[componentType][alias] = ptr
-	} else {
-		instance.references[componentType] = ptr
 	}
+	instance.references[componentType] = ptr
 	return nil
 }
 func (instance *Builder) GetValue(src string) (any, error) {

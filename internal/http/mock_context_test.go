@@ -3,7 +3,6 @@ package internal
 import (
 	"bytes"
 	"embed"
-	"fmt"
 	"github.com/raitonbl/coverup/pkg"
 	"io"
 	"net/http"
@@ -45,7 +44,6 @@ func (instance *EmbeddedResourceHttpClient) Do(req *http.Request) (*http.Respons
 		f += instance.directory
 	}
 	f += req.URL.Path
-	fmt.Println("FILE:", f)
 	content, err := instance.fs.ReadFile(f)
 	if err != nil {
 		return nil, err

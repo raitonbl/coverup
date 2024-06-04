@@ -16,26 +16,26 @@ type Request struct {
 
 func (instance Request) GetPathValue(x string) (any, error) {
 	switch x {
-	case "Method":
+	case "method":
 		return instance.method, nil
-	case "ServerURL":
+	case "server_url":
 		return instance.serverURL, nil
-	case "URI":
+	case "uri":
 		return instance.uri, nil
-	case "Body":
+	case "body":
 		return string(instance.body), nil
-	case "Response":
+	case "response":
 		{
 			if instance.response == nil {
 				return nil, fmt.Errorf("%s mustn't be undefined", x)
 			}
 			return instance.response, nil
 		}
-	case "Headers":
+	case "headers":
 		return instance.headers, nil
 	default:
 		{
-			if strings.HasPrefix(x, "Response.") {
+			if strings.HasPrefix(x, "response.") {
 				if instance.response == nil {
 					return nil, fmt.Errorf("%s mustn't be undefined", x)
 				}
@@ -55,15 +55,15 @@ type Response struct {
 
 func (instance *Response) GetPathValue(x string) (any, error) {
 	switch x {
-	case "StatusCode":
+	case "status_code":
 		return instance.statusCode, nil
-	case "Headers":
+	case "headers":
 		return instance.headers, nil
-	case "Body":
+	case "body":
 		return instance.body, nil
 	default:
 		{
-			if strings.HasPrefix(x, "Body.") {
+			if strings.HasPrefix(x, "body.") {
 				return instance.getValueFromPath(x[5:])
 			}
 			return nil, fmt.Errorf("cannot resolve %s", x)

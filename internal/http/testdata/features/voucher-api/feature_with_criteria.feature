@@ -1,11 +1,11 @@
 Feature: Buy voucher
     Scenario: Buy a PSN 100 UK voucher
-        Given a HttpRequest <SendVoucherRequest>
+        Given a HttpRequest named SendVoucherRequest
             And the headers:
                 | content-type  | application/json |
-            And Operation POST /vouchers
+            And operation POST /vouchers
             # And Timeout 3 seconds
-            And Body:
+            And body:
                 """
                 {
                     "benefit": "PSN 100 UK",
@@ -13,16 +13,17 @@ Feature: Buy voucher
                 }
                 """
         Then the response statusCode is 200
-            And the $body complies with schema file://voucher-response-schema
+            And the {{HttpRequest.SendVoucherRequest.StatusCode}} is 200
+            And the $body complies with schema file://response.schema.json
             And the $body.benefit is equal to "PSN 100 UK"
             And the $body.price.amount is equal to 85
             And the $body.price.currency is equal to GBP
             And the $body.has_discount is true
-            And the $body.id is defined
+            And the {{HttpRequest.SendVoucherRequest.body}}.id is defined
             # Force a 2 second wait
             And wait 2 seconds
 
-        Given a HttpRequest <AssertVoucherHasBeenPurchased>
+        Given a HttpRequest named AssertVoucherHasBeenPurchased
             And Server https://www.api.psn.co.uk
             And the headers:
                 | content-type  | application/json |
