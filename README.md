@@ -10,3 +10,5 @@ Feature in backlog:
 * Placeholders support
 * Then wait
 * Http Request with timeout
+* Mutipart/form-data
+* Fetch file from AWS S3
