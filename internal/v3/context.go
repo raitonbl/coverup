@@ -7,5 +7,5 @@ import (
 
 type ScenarioContext interface {
 	context.Context
-	GerkhinContext() godog.ScenarioContext
+	GerkhinContext() *godog.ScenarioContext
 }

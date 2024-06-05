@@ -25,7 +25,7 @@ Feature: Design
         Given a HttpRequest
         And the headers:
             | content-type  | application/json |
-        And method is POST
+        And the method is POST
         And path is /vouchers
         And server url is https://localhost:8443
         And accept is "application/json"
