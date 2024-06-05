@@ -3,8 +3,9 @@ Feature: Buy voucher
         Given a HttpRequest named SendVoucherRequest
             And the headers:
                 | content-type  | application/json |
-            And operation POST /vouchers
-            # And Timeout 3 seconds
+            And method is POST
+            And uri is /vouchers
+           # And server url is https://localhost:8443
             And body is:
                 """
                 {
@@ -12,23 +13,24 @@ Feature: Buy voucher
                     "promo-code": "raitonbl.com"
                 }
                 """
-        When submitting HttpRequest
-        Then the response status code is 200
-            And the {{HttpRequest.SendVoucherRequest}} response status code is 200
-            And the $body complies with schema file://response.schema.json
-            And the $body.benefit is equal to "PSN 100 UK"
-            And the $body.price.amount is equal to 85
-            And the $body.price.currency is equal to GBP
-            And the $body.has_discount is true
-            And the {{HttpRequest.SendVoucherRequest.body}}.id is defined
-            # Force a 2 second wait
-            And wait 2 seconds
 
-        Given a HttpRequest named AssertVoucherHasBeenPurchased
-            And Server https://www.api.psn.co.uk
-            And the headers:
-                | content-type  | application/json |
-            And Operation GET /vouchers/{{HttpRequest.SendVoucherRequest.Response.Body.id}}
-        Then the response statusCode is 200
-            And the $body complies with schema file://psn-response-schema
-            And the $body.id is equal to {{HttpRequest.SendVoucherRequest.Response.Body.id}}
+           # And accept is "application/json"
+           # And content-type is "application/json"
+
+           # And body is file://request.json
+           # And body is http://request.json
+           # And body is htts://request.json
+
+           # And form method is POST
+           # And form enctype is multipart/form-data
+           # And form enctype is multipart/form-data
+           # And form field "full_name" is "RaitonBL"
+           # And form field "full_name" is "{{Entities.administrator.name}}"
+           # And form field "picture" is file://image.png
+           # And form field "picture" is file://{{Properties.files.picture}}
+
+           # And form method is POST
+           # And form enctype is application/x-www-form-urlencoded
+           # And form enctype is multipart/form-data
+           # And form field "full_name" is "RaitonBL"
+           # And form field "full_name" is "{{Entities.administrator.name}}"
