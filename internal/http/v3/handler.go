@@ -70,7 +70,11 @@ func (instance *HttpContext) withHeader(req *HttpRequest, name, value string) er
 	if req.headers == nil {
 		req.headers = make(map[string]string)
 	}
-	req.headers[name] = value
+	valueOf, err := instance.ctx.GetValue(value)
+	if err != nil {
+		return err
+	}
+	req.headers[name] = fmt.Sprintf("%v", valueOf)
 	return nil
 }
 
@@ -104,30 +108,47 @@ func (instance *HttpContext) withMethod(req *HttpRequest, method string) error {
 
 func (instance *HttpContext) WithPath(path string) error {
 	return instance.onHttpRequest(func(req *HttpRequest) error {
-		req.path = path
+		valueOf, err := instance.ctx.GetValue(path)
+		if err != nil {
+			return err
+		}
+		req.path = fmt.Sprintf("%v", valueOf)
 		return nil
 	})
 }
 
 func (instance *HttpContext) WithHttpPath(url string) error {
 	return instance.onHttpRequest(func(req *HttpRequest) error {
+		valueOf, err := instance.ctx.GetValue(url)
+		if err != nil {
+			return err
+		}
 		req.path = ""
-		req.serverURL = "http://" + url
+		req.serverURL = fmt.Sprintf("http://%v", valueOf)
 		return nil
 	})
 }
 
 func (instance *HttpContext) WithHttpsPath(url string) error {
 	return instance.onHttpRequest(func(req *HttpRequest) error {
+		valueOf, err := instance.ctx.GetValue(url)
+		if err != nil {
+			return err
+		}
 		req.path = ""
-		req.serverURL = "https://" + url
+		req.serverURL = fmt.Sprintf("https://%v", valueOf)
 		return nil
 	})
 }
 
 func (instance *HttpContext) WithServerURL(url string) error {
 	return instance.onHttpRequest(func(req *HttpRequest) error {
-		req.serverURL = url
+		valueOf, err := instance.ctx.GetValue(url)
+		if err != nil {
+			return err
+		}
+		req.path = ""
+		req.serverURL = fmt.Sprintf("%v", valueOf)
 		return nil
 	})
 }
@@ -152,7 +173,11 @@ func (instance *HttpContext) withBody(s func() ([]byte, error)) error {
 
 func (instance *HttpContext) WithBodyFileURI(value string) error {
 	return instance.withBody(func() ([]byte, error) {
-		return instance.readURI(fileURISchema + value)
+		valueOf, err := instance.ctx.GetValue(value)
+		if err != nil {
+			return nil, err
+		}
+		return instance.readURI(fmt.Sprintf("%s%v", fileURISchema, valueOf))
 	})
 }
 
@@ -190,13 +215,21 @@ func (instance *HttpContext) WithFormEncType(value string) error {
 
 func (instance *HttpContext) WithFormAttribute(name, value string) error {
 	return instance.onFormAttribute(name, func() (any, error) {
-		return value, nil
+		valueOf, err := instance.ctx.GetValue(value)
+		if err != nil {
+			return nil, err
+		}
+		return fmt.Sprintf("%v", valueOf), nil
 	})
 }
 
 func (instance *HttpContext) WithFormFile(name, value string) error {
 	return instance.onFormAttribute(name, func() (any, error) {
-		return instance.readURI(fileURISchema + value)
+		valueOf, err := instance.ctx.GetValue(value)
+		if err != nil {
+			return nil, err
+		}
+		return instance.readURI(fmt.Sprintf("%s%v", fileURISchema, valueOf))
 	})
 }
 
