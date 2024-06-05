@@ -68,7 +68,7 @@ Feature: Design
         And form enctype is multipart/form-data
         And form attribute "full_name" is "RaitonBL"
         And form attribute "full_name" is "{{Entities.administrator.name}}"
-        And form attribute "picture" is file://image.png
+        And form attribute "picture" is file://picture.base64
         And form attribute "picture" is file://{{Properties.files.picture}}
 
     Scenario:
@@ -80,7 +80,7 @@ Feature: Design
         And server url is https://localhost:8443
         And form enctype is multipart/form-data
         And form attribute "full_name" is "{{Entities.administrator.name}}"
-        And form attribute "picture" is file://image.png
+        And form attribute "picture" is file://picture.base64
         And form attribute "picture" is file://{{Properties.files.picture}}
 
     Scenario:

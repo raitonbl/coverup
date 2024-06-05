@@ -57,12 +57,20 @@ func Apply(ctx v3.ScenarioContext) {
 	ctx.GerkhinContext().Step(`^(?i)body is file://(.+)$`, h.WithBodyFileURI)
 	ctx.GerkhinContext().Step(`^(?i)the body is file://(.+)$`, h.WithBodyFileURI)
 	ctx.GerkhinContext().Step(`^(?i)the Body is file://(.+)$`, h.WithBodyFileURI)
-
 	//Form
-	ctx.GerkhinContext().Step(`^(?i)(the |)form enctype is ([^"]*)$`, h.WithFormEncType)
-	ctx.GerkhinContext().Step(`^(?i)(the |)form attribute "([a-zA-Z_]+)" is "([^"]+)"$`, h.WithFormAttribute)
-	ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)(the |)form attribute "%s"$`, valueRegex), h.WithFormAttribute)
-	ctx.GerkhinContext().Step(`^form attribute "([a-zA-Z_]+)" is file://(.+)$`, h.WithFormFile)
-	ctx.GerkhinContext().Step(fmt.Sprintf(`^form attribute "([a-zA-Z_]+)" is file://%s`, valueRegex), h.WithFormFile)
-
+	ctx.GerkhinContext().Step(`^(?i)form enctype is ([^"]*)$`, h.WithFormEncType)
+	ctx.GerkhinContext().Step(`^(?i)the form enctype is ([^"]*)$`, h.WithFormEncType)
+	ctx.GerkhinContext().Step(`^(?i)the Form enctype is ([^"]*)$`, h.WithFormEncType)
+	ctx.GerkhinContext().Step(`^(?i)form attribute "([a-zA-Z_]+)" is "([^"]+)"$`, h.WithFormAttribute)
+	ctx.GerkhinContext().Step(`^(?i)the form attribute "([a-zA-Z_]+)" is "([^"]+)"$`, h.WithFormAttribute)
+	ctx.GerkhinContext().Step(`^(?i)the Form attribute "([a-zA-Z_]+)" is "([^"]+)"$`, h.WithFormAttribute)
+	ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)form attribute "%s"$`, valueRegex), h.WithFormAttribute)
+	ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)the form attribute "%s"$`, valueRegex), h.WithFormAttribute)
+	ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)the Form attribute "%s"$`, valueRegex), h.WithFormAttribute)
+	ctx.GerkhinContext().Step(`^(?i)form attribute "([a-zA-Z_]+)" is file://(.+)$`, h.WithFormFile)
+	ctx.GerkhinContext().Step(`^(?i)the form attribute "([a-zA-Z_]+)" is file://(.+)$`, h.WithFormFile)
+	ctx.GerkhinContext().Step(`^(?i)the Form attribute "([a-zA-Z_]+)" is file://(.+)$`, h.WithFormFile)
+	ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)form attribute "([a-zA-Z_]+)" is file://%s`, valueRegex), h.WithFormFile)
+	ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)the form attribute "([a-zA-Z_]+)" is file://%s`, valueRegex), h.WithFormFile)
+	ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)the Form attribute "([a-zA-Z_]+)" is file://%s`, valueRegex), h.WithFormFile)
 }
