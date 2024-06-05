@@ -49,7 +49,7 @@ func (instance *HttpContext) WithServerURL(url string) error {
 	return nil
 }
 
-func (instance *HttpContext) WithBody(body godog.DocString) error {
+func (instance *HttpContext) WithBody(body *godog.DocString) error {
 	return nil
 }
 

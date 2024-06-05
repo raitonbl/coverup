@@ -5,9 +5,9 @@ import (
 	v3 "github.com/raitonbl/coverup/internal/v3"
 )
 
+const serverURLRegex = `(https?://[^\s]+)`
+const relativeURIRegex = `/([^/]+(?:/[^/]+)*)`
 const valueRegex = `\{\{\s*([a-zA-Z0-9]+\.)*[a-zA-Z0-9]+\s*\}\}`
-const relativeURIRegex = `^(/|(\./|\.\./|[a-zA-Z0-9_\-\.]+/?)*[a-zA-Z0-9_\-\.]+/?)+`
-const serverURLRegex = `^(http|https)://([a-zA-Z0-9_\-\.]+(:\d+)?(/.*)?)`
 
 func Apply(ctx v3.ScenarioContext) {
 	h := HttpContext{
@@ -51,8 +51,13 @@ func Apply(ctx v3.ScenarioContext) {
 	ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)the server url is %s$`, serverURLRegex), h.WithServerURL)
 	ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)the Server url is %s$`, serverURLRegex), h.WithServerURL)
 	//Body
-	ctx.GerkhinContext().Step(`^(?i)(the |)body is $`, h.WithBody)
-	ctx.GerkhinContext().Step(`^(?i)(the |)body is file://(.+)$`, h.WithBodyFileURI)
+	ctx.GerkhinContext().Step(`^(?i)body is:$`, h.WithBody)
+	ctx.GerkhinContext().Step(`^(?i)the body is:$`, h.WithBody)
+	ctx.GerkhinContext().Step(`^(?i)the Body is:$`, h.WithBody)
+	ctx.GerkhinContext().Step(`^(?i)body is file://(.+)$`, h.WithBodyFileURI)
+	ctx.GerkhinContext().Step(`^(?i)the body is file://(.+)$`, h.WithBodyFileURI)
+	ctx.GerkhinContext().Step(`^(?i)the Body is file://(.+)$`, h.WithBodyFileURI)
+
 	//Form
 	ctx.GerkhinContext().Step(`^(?i)(the |)form enctype is ([^"]*)$`, h.WithFormEncType)
 	ctx.GerkhinContext().Step(`^(?i)(the |)form attribute "([a-zA-Z_]+)" is "([^"]+)"$`, h.WithFormAttribute)

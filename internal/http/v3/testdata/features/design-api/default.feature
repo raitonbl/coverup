@@ -14,12 +14,12 @@ Feature: Design
         And method is POST
         And path is /vouchers
         And body is:
-                """
+        """
                 {
                     "benefit": "PSN 100 UK",
                     "promo-code": "raitonbl.com"
                 }
-                """
+        """
 
     Scenario:
         Given a HttpRequest
@@ -90,7 +90,6 @@ Feature: Design
         And method is POST
         And path is /forms
         And server url is https://localhost:8443
-        And form method is POST
         And form enctype is application/x-www-form-urlencoded
         And form enctype is multipart/form-data
         And form attribute "full_name" is "RaitonBL"
