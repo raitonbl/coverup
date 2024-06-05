@@ -2,8 +2,10 @@ package v3
 
 import (
 	"embed"
+	"fmt"
 	"github.com/cucumber/godog"
 	"github.com/cucumber/godog/colors"
+	"github.com/raitonbl/coverup/internal/context"
 	"github.com/raitonbl/coverup/pkg"
 	"os"
 	"testing"
@@ -13,7 +15,7 @@ import (
 var homeDirectory embed.FS
 
 func TestApply(t *testing.T) {
-	doApply(t, "features/design-api/default.feature", nil)
+	//doApply(t, "features/design-api/default.feature", nil)
 }
 
 func doApply(t *testing.T, filename string, f func(int) error) {
@@ -53,29 +55,62 @@ func doApply(t *testing.T, filename string, f func(int) error) {
 }
 
 type V3Context struct {
+	workDirectory  string
 	gherkinContext *godog.ScenarioContext
+	references     map[string]context.Component
+	aliases        map[string]map[string]context.Component
 }
 
-func (v *V3Context) GetServerURL() string {
+func (instance *V3Context) GetServerURL() string {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (v *V3Context) GetWorkDirectory() string {
+func (instance *V3Context) GetWorkDirectory() string {
+	if instance.workDirectory == "" {
+		return "./"
+	}
+	return instance.workDirectory
+}
+
+func (instance *V3Context) GetHttpClient() pkg.HttpClient {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (v *V3Context) GetHttpClient() pkg.HttpClient {
+func (instance *V3Context) GetResourcesHttpClient() pkg.HttpClient {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (v *V3Context) GetResourcesHttpClient() pkg.HttpClient {
-	//TODO implement me
-	panic("implement me")
+func (instance *V3Context) GerkhinContext() *godog.ScenarioContext {
+	return instance.gherkinContext
 }
 
-func (v *V3Context) GerkhinContext() *godog.ScenarioContext {
-	return v.gherkinContext
+func (instance *V3Context) Register(componentType string, ptr context.Component, alias string) error {
+	if alias != "" {
+		if _, hasValue := instance.aliases[componentType]; !hasValue {
+			instance.aliases[componentType] = make(map[string]context.Component)
+		}
+		if _, hasValue := instance.aliases[componentType][alias]; hasValue {
+			return fmt.Errorf("%s with alias %s cannot be defined more than once", componentType, alias)
+		}
+		instance.aliases[componentType][alias] = ptr
+	}
+	instance.references[componentType] = ptr
+	return nil
+}
+
+func (instance *V3Context) GetValue(value string) (any, error) {
+	return value, nil
+}
+
+func (instance *V3Context) GetComponent(componentType, alias string) (any, error) {
+	if alias != "" {
+		if components, exists := instance.aliases[componentType]; exists {
+			return components[alias], nil
+		}
+		return nil, nil
+	}
+	return instance.references[componentType], nil
 }

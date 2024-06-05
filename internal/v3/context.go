@@ -7,5 +7,8 @@ import (
 
 type ScenarioContext interface {
 	context.Context
+	GetValue(value string) (any, error)
 	GerkhinContext() *godog.ScenarioContext
+	GetComponent(componentType, alias string) (any, error)
+	Register(componentType string, ptr context.Component, alias string) error
 }

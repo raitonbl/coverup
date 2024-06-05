@@ -9,7 +9,15 @@ type HttpRequest struct {
 	headers   map[string]string
 }
 
+func (instance *HttpRequest) GetPathValue(x string) (any, error) {
+	panic("implement me")
+}
+
 type Form struct {
 	encType    string
-	attributes map[string][]byte
+	attributes map[string]any
+}
+
+func (instance *Form) GetPathValue(x string) (any, error) {
+	panic("implement me")
 }
