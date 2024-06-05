@@ -15,7 +15,7 @@ import (
 var homeDirectory embed.FS
 
 func TestApply(t *testing.T) {
-	//doApply(t, "features/design-api/default.feature", nil)
+	doApply(t, "features/design-api/default.feature", nil)
 }
 
 func doApply(t *testing.T, filename string, f func(int) error) {
@@ -23,6 +23,11 @@ func doApply(t *testing.T, filename string, f func(int) error) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	workDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	workDir += "/testdata/features/design-api"
 	status := godog.TestSuite{
 		TestSuiteInitializer: nil,
 		Options: &godog.Options{
@@ -40,7 +45,10 @@ func doApply(t *testing.T, filename string, f func(int) error) {
 		},
 		ScenarioInitializer: func(gherkinContext *godog.ScenarioContext) {
 			ctxt := &V3Context{
+				workDirectory:  workDir,
 				gherkinContext: gherkinContext,
+				references:     make(map[string]context.Component),
+				aliases:        make(map[string]map[string]context.Component),
 			}
 			Apply(ctxt)
 		},
