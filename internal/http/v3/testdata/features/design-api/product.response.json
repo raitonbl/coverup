@@ -1,0 +1,39 @@
+{
+  "id": "27258303-9ebc-4b84-a17e-f886161ab2f5",
+  "name": "Seagate One Touch SSD 1TB External SSD Portable – Black, speeds up to 1030MB/s",
+  "summary": "An external SSD device that guarantees 1TB storage",
+  "image": "/photos/27258303-9ebc-4b84-a17e-f886161ab2f5",
+  "in_promotion": false,
+  "offer_created_at": "2022-06-06T12:34:56Z",
+  "offer_expires_at": "2024-12-31T23:59:56Z",
+  "about": [
+    "One Touch SSD is a mini USB 3.0 SSD featuring a lightweight, textile design for busy days and bustling commutes.",
+    "High-speed, portable solid state drive perfect for streaming stored videos directly to laptop, scrolling seamlessly through photos, and backing up content on the go. ",
+    "Enjoy long-term peace of mind with the included three-year limited warranty and Rescue Data Recovery Services. "
+  ],
+  "warranty": {
+    "amount": 1,
+    "unit": "year"
+  },
+  "price": {
+    "amount": 200,
+    "currency": "USD"
+  },
+  "characteristics": {
+    "capacity": {
+      "amount": 1,
+      "unit": "TB"
+    },
+    "hard_disk_interface": "USB-C",
+    "connectivity_technology": "USB",
+    "brand": "Seagate",
+    "special_feature": "Portable",
+    "hard_disk_form_factor": {
+      "amount": 2.5,
+      "unit": "inch"
+    },
+    "hard_disk_description": "SSD",
+    "color": "BLACK",
+    "installation_type": "EXTERNAL"
+  }
+}
