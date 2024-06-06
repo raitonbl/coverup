@@ -8,6 +8,7 @@ import (
 	"github.com/raitonbl/coverup/internal/context"
 	"github.com/raitonbl/coverup/pkg"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -110,6 +111,9 @@ func (instance *V3Context) Register(componentType string, ptr context.Component,
 }
 
 func (instance *V3Context) GetValue(value string) (any, error) {
+	if strings.HasPrefix(value, "{{") && strings.HasSuffix(value, "}}") {
+		return "picture.base64", nil
+	}
 	return value, nil
 }
 
