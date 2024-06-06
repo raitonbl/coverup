@@ -11,9 +11,19 @@
     "High-speed, portable solid state drive perfect for streaming stored videos directly to laptop, scrolling seamlessly through photos, and backing up content on the go. ",
     "Enjoy long-term peace of mind with the included three-year limited warranty and Rescue Data Recovery Services. "
   ],
+  "tags": [
+    {
+      "id": "ebbb5082-58f4-4ea4-9840-e02cc86501de",
+      "name": "IT"
+    },
+    {
+      "id": "0c61ba6a-baea-4316-b2c2-e847253d029b",
+      "name": "HDD"
+    }
+  ],
   "warranty": {
-    "amount": 1,
-    "unit": "year"
+    "amount": 2,
+    "unit": "years"
   },
   "price": {
     "amount": 200,
