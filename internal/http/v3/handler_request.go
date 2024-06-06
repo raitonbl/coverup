@@ -258,3 +258,67 @@ func (instance *HttpContext) onForm(s func(*Form) error) error {
 		return s(form)
 	})
 }
+
+func (instance *HttpContext) SubmitHttpRequest() error {
+	return nil
+}
+
+func (instance *HttpContext) SubmitHttpRequestOnBehalfOfEntity(id string) error {
+	return nil
+}
+
+func (instance *HttpContext) SubmitAliasedHttpRequest(alias string) error {
+	return nil
+}
+
+func (instance *HttpContext) SubmitAliasedHttpRequestOnBehalfOfEntity(alias, id string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponseStatusCode(statusCode int) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertAliasedHttpRequestResponseStatusCode(alias string, statusCode int) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertAliasedHttpRequestResponseExactHeaders(alias string, table *godog.Table) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponseExactHeaders(table *godog.Table) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponseContainsHeaders(table *godog.Table) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertAliasedHttpRequestResponseContainsHeaders(alias string, table *godog.Table) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponseHeader(name, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponseContentType(value string) error {
+	return instance.AssertResponseHeader("content-type", value)
+}
+
+func (instance *HttpContext) AssertAliasedHttpRequestResponseContentType(alias, value string) error {
+	return instance.AssertAliasedHttpRequestResponseHeader(alias, "content-type", value)
+}
+
+func (instance *HttpContext) AssertAliasedHttpRequestResponseHeader(alias string, header string, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponseIsValidAgainstSchema(file string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertAliasedHttpRequestResponseIsValidAgainstSchema(alias, file string) error {
+	return nil
+}

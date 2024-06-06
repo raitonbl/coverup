@@ -21,3 +21,6 @@ type Form struct {
 func (instance *Form) GetPathValue(x string) (any, error) {
 	panic("implement me")
 }
+
+type HttpResponse struct {
+}
