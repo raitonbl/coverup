@@ -267,11 +267,11 @@ func (instance *HttpContext) SubmitHttpRequestOnBehalfOfEntity(id string) error 
 	return nil
 }
 
-func (instance *HttpContext) SubmitAliasedHttpRequest(alias string) error {
+func (instance *HttpContext) SubmitNamedHttpRequest(alias string) error {
 	return nil
 }
 
-func (instance *HttpContext) SubmitAliasedHttpRequestOnBehalfOfEntity(alias, id string) error {
+func (instance *HttpContext) SubmitNamedHttpRequestOnBehalfOfEntity(alias, id string) error {
 	return nil
 }
 
@@ -279,11 +279,11 @@ func (instance *HttpContext) AssertResponseStatusCode(statusCode int) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertAliasedHttpRequestResponseStatusCode(alias string, statusCode int) error {
+func (instance *HttpContext) AssertNamedHttpRequestResponseStatusCode(alias string, statusCode int) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertAliasedHttpRequestResponseExactHeaders(alias string, table *godog.Table) error {
+func (instance *HttpContext) AssertNamedHttpRequestResponseExactHeaders(alias string, table *godog.Table) error {
 	return nil
 }
 
@@ -295,7 +295,7 @@ func (instance *HttpContext) AssertResponseContainsHeaders(table *godog.Table) e
 	return nil
 }
 
-func (instance *HttpContext) AssertAliasedHttpRequestResponseContainsHeaders(alias string, table *godog.Table) error {
+func (instance *HttpContext) AssertNamedHttpRequestResponseContainsHeaders(alias string, table *godog.Table) error {
 	return nil
 }
 
@@ -307,11 +307,11 @@ func (instance *HttpContext) AssertResponseContentType(value string) error {
 	return instance.AssertResponseHeader("content-type", value)
 }
 
-func (instance *HttpContext) AssertAliasedHttpRequestResponseContentType(alias, value string) error {
-	return instance.AssertAliasedHttpRequestResponseHeader(alias, "content-type", value)
+func (instance *HttpContext) AssertNamedHttpRequestResponseContentType(alias, value string) error {
+	return instance.AssertNamedHttpRequestResponseHeader(alias, "content-type", value)
 }
 
-func (instance *HttpContext) AssertAliasedHttpRequestResponseHeader(alias string, header string, value string) error {
+func (instance *HttpContext) AssertNamedHttpRequestResponseHeader(alias string, header string, value string) error {
 	return nil
 }
 
@@ -319,6 +319,54 @@ func (instance *HttpContext) AssertResponseIsValidAgainstSchema(file string) err
 	return nil
 }
 
-func (instance *HttpContext) AssertAliasedHttpRequestResponseIsValidAgainstSchema(alias, file string) error {
+func (instance *HttpContext) AssertNamedHttpRequestResponseIsValidAgainstSchema(alias, file string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponseBodyPathEqualsTo(alias, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponseBodyPathEqualsToValue(alias, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponseBodyPathIsEqualToFloat64(p string, value float64) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponseBodyPathIsEqualToBoolean(alias string, value bool) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponseBodyPathEqualsTo(alias, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponseBodyPathEqualsToValue(alias, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponseBodyPathIsEqualToFloat64(alias string, value float64) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponseBodyPathIsEqualToBoolean(alias string, value bool) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponseBodyEqualsToFile(value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponseBodyEqualsToFile(alias string, value bool) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponseBodyEqualsTo(value *godog.DocString) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponseBodyEqualsTo(alias string, value *godog.DocString) error {
 	return nil
 }
