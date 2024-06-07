@@ -14,9 +14,9 @@ Feature: Design
     And $body.id starts with "27258303"
     And $body.id ends with "f886161ab2f5"
     And $body.id contains with "4b84-a17e"
-    And $body.id starts with "27258303" (ignore case)
-    And $body.id ends with "f886161ab2f5" (ignore case)
-    And $body.id contains with "4b84-a17e" (ignore case)
+    And $body.id starts with "27258303", ignoring case
+    And $body.id ends with "f886161ab2f5", ignoring case
+    And $body.id contains "4b84-a17e", ignoring case
     And $body.id matches pattern "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 
   Scenario:

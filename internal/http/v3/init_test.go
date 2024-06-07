@@ -51,7 +51,7 @@ func doApply(t *testing.T, filename string, f func(int) error) {
 				references:     make(map[string]context.Component),
 				aliases:        make(map[string]map[string]context.Component),
 			}
-			Apply(ctxt)
+			Set(ctxt)
 		},
 	}.Run()
 	if f != nil {

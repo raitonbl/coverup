@@ -11,7 +11,7 @@ const valueRegex = `\{\{\s*([a-zA-Z0-9]+\.)*[a-zA-Z0-9]+\s*\}\}`
 const httpRequestRegex = `\{\{\s*HttpRequest\.\w+\s*\}\}`
 const entityRegex = `\{\{\s*Entity\.\w+\s*\}\}`
 
-func Apply(ctx v3.ScenarioContext) {
+func Set(ctx v3.ScenarioContext) {
 	h := &HttpContext{
 		ctx: ctx,
 	}
@@ -170,5 +170,47 @@ func onResponse(h *HttpContext) {
 	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body for %s is:$`, httpRequestRegex), h.AssertNamedHttpRequestResponseBodyEqualsTo)
 	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body for %s is:$`, httpRequestRegex), h.AssertNamedHttpRequestResponseBodyEqualsTo)
 	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body for %s is:$`, httpRequestRegex), h.AssertNamedHttpRequestResponseBodyEqualsTo)
-
+	patterns = map[string]any{
+		"contains":    []any{h.AssertResponsePathContains, h.AssertWhileIgnoringCaseThatResponsePathContains},
+		"ends with":   []any{h.AssertResponsePathEndsWith, h.AssertWhileIgnoringCaseThatResponsePathEndsWith},
+		"starts with": []any{h.AssertResponsePathStartsWith, h.AssertWhileIgnoringCaseThatResponsePathStartsWith},
+	}
+	valueOpts := []string{`"([^"]*)"$`, valueRegex}
+	for k, arr := range patterns {
+		for arrayIndex, attr := range arr.([]any) {
+			for _, opt := range valueOpts {
+				expr := k
+				if arrayIndex == 1 {
+					expr = "ignoring case " + k
+				}
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) %s %s$`, expr, opt), attr)
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) %s %s$`, expr, opt), attr)
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) %s %s$`, expr, opt), attr)
+			}
+		}
+	}
+	patterns = map[string]any{
+		"contains":    []any{h.AssertNamedHttpRequestResponsePathContains, h.AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathContains},
+		"ends with":   []any{h.AssertNamedHttpRequestResponsePathEndsWith, h.AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathEndsWith},
+		"starts with": []any{h.AssertNamedHttpRequestResponsePathStartsWith, h.AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathStartsWith},
+	}
+	for k, arr := range patterns {
+		for arrayIndex, attr := range arr.([]any) {
+			for _, opt := range valueOpts {
+				expr := k
+				if arrayIndex == 1 {
+					expr = "ignoring case " + k
+				}
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*), for %s, %s %s$`, httpRequestRegex, expr, opt), attr)
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*), for %s, %s %s$`, httpRequestRegex, expr, opt), attr)
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*), for %s, %s %s$`, httpRequestRegex, expr, opt), attr)
+			}
+		}
+	}
+	h.ctx.GerkhinContext().Then(`^(?i)response body \$.(.*) matches pattern "([^"]*)"$`, h.AssertResponsePathMatchesPattern)
+	h.ctx.GerkhinContext().Then(`^(?i)the response body \$.(.*) matches pattern "([^"]*)"$`, h.AssertResponsePathMatchesPattern)
+	h.ctx.GerkhinContext().Then(`^(?i)the Response body \$.(.*) matches pattern "([^"]*)"$`, h.AssertResponsePathMatchesPattern)
+	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*),for %s, matches pattern "([^"]*)"$`, httpRequestRegex), h.AssertNamedHttpRequestResponsePathMatchesPattern)
+	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*), for %s, matches pattern "([^"]*)"$`, httpRequestRegex), h.AssertNamedHttpRequestResponsePathMatchesPattern)
+	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*), for %s, matches pattern "([^"]*)"$`, httpRequestRegex), h.AssertNamedHttpRequestResponsePathMatchesPattern)
 }

@@ -370,3 +370,59 @@ func (instance *HttpContext) AssertResponseBodyEqualsTo(value *godog.DocString) 
 func (instance *HttpContext) AssertNamedHttpRequestResponseBodyEqualsTo(alias string, value *godog.DocString) error {
 	return nil
 }
+
+func (instance *HttpContext) AssertResponsePathEndsWith(k string, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponsePathContains(k string, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponsePathStartsWith(k string, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertWhileIgnoringCaseThatResponsePathEndsWith(k string, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertWhileIgnoringCaseThatResponsePathContains(k string, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertWhileIgnoringCaseThatResponsePathStartsWith(k string, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponsePathMatchesPattern(k string, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathMatchesPattern(alias, k, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathEndsWith(alias, k, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathContains(alias, k, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathStartsWith(alias, k, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathEndsWith(alias, k, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathContains(alias, k, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathStartsWith(alias, k, value string) error {
+	return nil
+}
