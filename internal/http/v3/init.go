@@ -7,9 +7,9 @@ import (
 
 const serverURLRegex = `(https?://[^\s]+)`
 const relativeURIRegex = `/([^/]+(?:/[^/]+)*)`
-const valueRegex = `\{\{\s*([a-zA-Z0-9]+\.)*[a-zA-Z0-9]+\s*\}\}`
-const httpRequestRegex = `\{\{\s*HttpRequest\.\w+\s*\}\}`
-const entityRegex = `\{\{\s*Entity\.\w+\s*\}\}`
+const valueRegex = `\{\{\s*([a-zA-Z0-9_]+\.)*[a-zA-Z0-9_]+\s*\}\}`
+const httpRequestRegex = `\{\{\s*HttpRequest\.[a-zA-Z0-9_]+\s*\}\}`
+const entityRegex = `\{\{\s*Entity\.[a-zA-Z0-9_]+\s*\}\}`
 
 func Set(ctx v3.ScenarioContext) {
 	h := &HttpContext{
@@ -91,7 +91,6 @@ func onRequest(h *HttpContext) {
 	h.ctx.GerkhinContext().When(fmt.Sprintf("^(?i)the Client submits %s", httpRequestRegex), h.SubmitNamedHttpRequest)
 	h.ctx.GerkhinContext().When(fmt.Sprintf("%s submits %s", entityRegex, httpRequestRegex), h.SubmitNamedHttpRequestOnBehalfOfEntity)
 	h.ctx.GerkhinContext().When(fmt.Sprintf("^(?i)the %s submits %s", entityRegex, httpRequestRegex), h.SubmitNamedHttpRequestOnBehalfOfEntity)
-
 }
 
 func onResponse(h *HttpContext) {
@@ -136,10 +135,10 @@ func onResponse(h *HttpContext) {
 	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body for %s respects schema file://(.+)$`, httpRequestRegex), h.AssertNamedHttpRequestResponseIsValidAgainstSchema)
 	// body
 	patterns := map[string]any{
-		`"([^"]*)"`:    h.AssertResponseBodyPathEqualsTo,
-		valueRegex:     h.AssertResponseBodyPathEqualsToValue,
-		`(\d+)`:        h.AssertResponseBodyPathIsEqualToFloat64,
-		`(true|false)`: h.AssertResponseBodyPathIsEqualToBoolean,
+		`"([^"]*)"`:       h.AssertResponseBodyPathEqualsTo,
+		valueRegex:        h.AssertResponseBodyPathEqualsToValue,
+		`(-?\d+(\.\d+)?)`: h.AssertResponseBodyPathIsEqualToFloat64,
+		`(true|false)`:    h.AssertResponseBodyPathIsEqualToBoolean,
 	}
 	for pattern, f := range patterns {
 		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) is %s$`, pattern), f)
@@ -147,10 +146,10 @@ func onResponse(h *HttpContext) {
 		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) is %s$`, pattern), f)
 	}
 	patterns = map[string]any{
-		`"([^"]*)"`:    h.AssertNamedHttpRequestResponseBodyPathEqualsTo,
-		valueRegex:     h.AssertNamedHttpRequestResponseBodyPathEqualsToValue,
-		`(\d+)`:        h.AssertNamedHttpRequestResponseBodyPathIsEqualToFloat64,
-		`(true|false)`: h.AssertNamedHttpRequestResponseBodyPathIsEqualToBoolean,
+		`"([^"]*)"`:       h.AssertNamedHttpRequestResponseBodyPathEqualsTo,
+		valueRegex:        h.AssertNamedHttpRequestResponseBodyPathEqualsToValue,
+		`(-?\d+(\.\d+)?)`: h.AssertNamedHttpRequestResponseBodyPathIsEqualToFloat64,
+		`(true|false)`:    h.AssertNamedHttpRequestResponseBodyPathIsEqualToBoolean,
 	}
 	for pattern, f := range patterns {
 		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) for %s is %s$`, httpRequestRegex, pattern), f)
@@ -278,9 +277,9 @@ func onResponse(h *HttpContext) {
 	for k, opts := range patterns {
 		for i, f := range opts.([]any) {
 			if i == 0 {
-				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) is %s (\d+)$`, k), f)
-				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) is %s (\d+)$`, k), f)
-				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) is %s (\d+)$`, k), f)
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) is %s (-?\d+(\.\d+)?)$`, k), f)
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) is %s (-?\d+(\.\d+)?)$`, k), f)
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) is %s (-?\d+(\.\d+)?)$`, k), f)
 			} else {
 				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) is %s %s$`, k, valueRegex), f)
 				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) is %s %s$`, k, valueRegex), f)
@@ -297,9 +296,9 @@ func onResponse(h *HttpContext) {
 	for k, opts := range patterns {
 		for i, f := range opts.([]any) {
 			if i == 0 {
-				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) is %s, for %s, (\d+)$`, httpRequestRegex, k), f)
-				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*), for %s, is %s (\d+)$`, httpRequestRegex, k), f)
-				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*), for %s, is %s (\d+)$`, httpRequestRegex, k), f)
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) is %s, for %s, (-?\d+(\.\d+)?)$`, httpRequestRegex, k), f)
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*), for %s, is %s (-?\d+(\.\d+)?)$`, httpRequestRegex, k), f)
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*), for %s, is %s (-?\d+(\.\d+)?)$`, httpRequestRegex, k), f)
 			} else {
 				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*), for %s, is %s %s$`, httpRequestRegex, k, valueRegex), f)
 				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*), for %s, is %s %s$`, httpRequestRegex, k, valueRegex), f)
@@ -308,8 +307,8 @@ func onResponse(h *HttpContext) {
 		}
 	}
 	patterns = map[string]any{
-		`\["[^"]*"(?:,"[^"]*")*\]`: h.AssertResponsePathIsInStringArray,
-		`\["\d+"(?:,"\d+")*\]`:     h.AssertResponsePathIsInNumericArray,
+		`(\["[^"]*"(?:,"[^"]*")*\])`: h.AssertResponsePathIsInStringArray,
+		`(\["\d+"(?:,"\d+")*\])`:     h.AssertResponsePathIsInNumericArray,
 	}
 	for expr, f := range patterns {
 		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) is part of %s$`, expr), f)
@@ -318,8 +317,8 @@ func onResponse(h *HttpContext) {
 	}
 
 	patterns = map[string]any{
-		`\["[^"]*"(?:,"[^"]*")*\]`: h.AssertNamedHttpRequestResponsePathIsInStringArray,
-		`\["\d+"(?:,"\d+")*\]`:     h.AssertNamedHttpRequestResponsePathIsInNumericArray,
+		`(\["[^"]*"(?:,"[^"]*")*\])`: h.AssertNamedHttpRequestResponsePathIsInStringArray,
+		`(\["\d+"(?:,"\d+")*\])`:     h.AssertNamedHttpRequestResponsePathIsInNumericArray,
 	}
 	for expr, f := range patterns {
 		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*), for %s, is part of %s$`, httpRequestRegex, expr), f)
