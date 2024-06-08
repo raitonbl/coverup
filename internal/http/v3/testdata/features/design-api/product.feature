@@ -63,5 +63,5 @@ Feature: Design
     And the $body.warranty.unit is part of ["years","months","days"]
     And the $body.price.amount is greater or equal to 200
     And the $body.characteristics.capacity.amount is lesser or equal to 1
-    And the $body.characteristics.hard_disk_form_factor.amount than 2.6
+    And the $body.characteristics.hard_disk_form_factor.amount greater than 2.6
 

@@ -270,29 +270,61 @@ func onResponse(h *HttpContext) {
 	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) length for %s is (\d+)$`, httpRequestRegex), h.AssertNamedHttpRequestResponsePathLengthIs)
 	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) length for %s is (\d+)$`, httpRequestRegex), h.AssertNamedHttpRequestResponsePathLengthIs)
 	patterns = map[string]any{
-		"lesser":              []any{h.AssertResponsePathIsLesserThan, h.AssertNamedHttpRequestResponsePathIsLesserThan},
-		"greater than":        []any{h.AssertResponsePathIsGreaterThan, h.AssertNamedHttpRequestResponsePathIsGreaterThan},
-		"lesser or equal to":  []any{h.AssertResponsePathIsLesserThanOrEqualTo, h.AssertNamedHttpRequestResponsePathIsLesserThanOrEqualTo},
-		"greater or equal to": []any{h.AssertResponsePathIsGreaterThanOrEqualTo, h.AssertNamedHttpRequestResponsePathIsGreaterThanOrEqualTo},
+		"lesser":              []any{h.AssertResponsePathIsLesserThan, h.AssertResponsePathIsLesserThanValue},
+		"greater than":        []any{h.AssertResponsePathIsGreaterThan, h.AssertResponsePathIsGreaterThanValue},
+		"lesser or equal to":  []any{h.AssertResponsePathIsLesserThanOrEqualTo, h.AssertResponsePathIsLesserThanOrEqualToValue},
+		"greater or equal to": []any{h.AssertResponsePathIsGreaterThanOrEqualTo, h.AssertResponsePathIsGreaterThanOrEqualToValue},
 	}
 	for k, opts := range patterns {
-		for _, f := range opts.([]any) {
-			h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) is %s (\d+)$`, k), f)
-			h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) is %s (\d+)$`, k), f)
-			h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) is %s (\d+)$`, k), f)
-			h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) is %s %s$`, k, valueRegex), f)
-			h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) is %s %s$`, k, valueRegex), f)
-			h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) is %s %s$`, k, valueRegex), f)
+		for i, f := range opts.([]any) {
+			if i == 0 {
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) is %s (\d+)$`, k), f)
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) is %s (\d+)$`, k), f)
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) is %s (\d+)$`, k), f)
+			} else {
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) is %s %s$`, k, valueRegex), f)
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) is %s %s$`, k, valueRegex), f)
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) is %s %s$`, k, valueRegex), f)
+			}
 		}
 	}
 	patterns = map[string]any{
-		`\["[^"]*"(?:,"[^"]*")*\]`: nil,
-		`\["\d+"(?:,"\d+")*\]`:     nil,
+		"lesser":              []any{h.AssertNamedHttpRequestResponsePathIsLesserThan, h.AssertNamedHttpRequestResponsePathIsLesserThanValue},
+		"greater than":        []any{h.AssertNamedHttpRequestResponsePathIsGreaterThan, h.AssertNamedHttpRequestResponsePathIsGreaterThanValue},
+		"lesser or equal to":  []any{h.AssertNamedHttpRequestResponsePathIsLesserThanOrEqualTo, h.AssertNamedHttpRequestResponsePathIsLesserThanOrEqualToValue},
+		"greater or equal to": []any{h.AssertNamedHttpRequestResponsePathIsGreaterThanOrEqualTo, h.AssertNamedHttpRequestResponsePathIsGreaterThanOrEqualToValue},
+	}
+	for k, opts := range patterns {
+		for i, f := range opts.([]any) {
+			if i == 0 {
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) is %s, for %s, (\d+)$`, httpRequestRegex, k), f)
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*), for %s, is %s (\d+)$`, httpRequestRegex, k), f)
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*), for %s, is %s (\d+)$`, httpRequestRegex, k), f)
+			} else {
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*), for %s, is %s %s$`, httpRequestRegex, k, valueRegex), f)
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*), for %s, is %s %s$`, httpRequestRegex, k, valueRegex), f)
+				h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*), for %s, is %s %s$`, httpRequestRegex, k, valueRegex), f)
+			}
+		}
+	}
+	patterns = map[string]any{
+		`\["[^"]*"(?:,"[^"]*")*\]`: h.AssertResponsePathIsInStringArray,
+		`\["\d+"(?:,"\d+")*\]`:     h.AssertResponsePathIsInNumericArray,
 	}
 	for expr, f := range patterns {
-		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) is part of %s$`, expr), nil)
-		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) is part of %s$`, expr), nil)
-		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) is part of %s$`, expr), nil)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) is part of %s$`, expr), f)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) is part of %s$`, expr), f)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) is part of %s$`, expr), f)
+	}
+
+	patterns = map[string]any{
+		`\["[^"]*"(?:,"[^"]*")*\]`: h.AssertNamedHttpRequestResponsePathIsInStringArray,
+		`\["\d+"(?:,"\d+")*\]`:     h.AssertNamedHttpRequestResponsePathIsInNumericArray,
+	}
+	for expr, f := range patterns {
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*), for %s, is part of %s$`, httpRequestRegex, expr), f)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*), for %s, is part of %s$`, httpRequestRegex, expr), f)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*), for %s, is part of %s$`, httpRequestRegex, expr), f)
 	}
 
 }

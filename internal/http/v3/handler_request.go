@@ -335,7 +335,7 @@ func (instance *HttpContext) AssertResponseBodyPathIsEqualToFloat64(p string, va
 	return nil
 }
 
-func (instance *HttpContext) AssertResponseBodyPathIsEqualToBoolean(alias string, value bool) error {
+func (instance *HttpContext) AssertResponseBodyPathIsEqualToBoolean(alias string, value string) error {
 	return nil
 }
 
@@ -351,7 +351,7 @@ func (instance *HttpContext) AssertNamedHttpRequestResponseBodyPathIsEqualToFloa
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponseBodyPathIsEqualToBoolean(alias string, value bool) error {
+func (instance *HttpContext) AssertNamedHttpRequestResponseBodyPathIsEqualToBoolean(alias string, value string) error {
 	return nil
 }
 
@@ -359,7 +359,7 @@ func (instance *HttpContext) AssertResponseBodyEqualsToFile(value string) error 
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponseBodyEqualsToFile(alias string, value bool) error {
+func (instance *HttpContext) AssertNamedHttpRequestResponseBodyEqualsToFile(alias string, value string) error {
 	return nil
 }
 
@@ -515,6 +515,22 @@ func (instance *HttpContext) AssertResponsePathIsLesserThanOrEqualTo(k string, v
 	return nil
 }
 
+func (instance *HttpContext) AssertResponsePathIsGreaterThanValue(k string, value float64) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponsePathIsGreaterThanOrEqualToValue(k string, value float64) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponsePathIsLesserThanValue(k string, value float64) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponsePathIsLesserThanOrEqualToValue(k string, value float64) error {
+	return nil
+}
+
 func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsGreaterThan(alias, k string, value float64) error {
 	return nil
 }
@@ -528,5 +544,37 @@ func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsLesserThan(alia
 }
 
 func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsLesserThanOrEqualTo(alias, k string, value float64) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsGreaterThanValue(alias, k string, value float64) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsGreaterThanOrEqualToValue(alias, k string, value float64) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsLesserThanValue(alias, k string, value float64) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsLesserThanOrEqualToValue(alias, k string, value float64) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponsePathIsInStringArray(k string, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponsePathIsInNumericArray(k string, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsInStringArray(alias, k string, value string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsInNumericArray(alias, k string, value string) error {
 	return nil
 }
