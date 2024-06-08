@@ -29,10 +29,10 @@ Feature: Design
     When the client submits the HttpRequest
     Then the response status code is 200
     And the content-type is application/json
-    And the $body.offer_created_at is DateTime
-    And the $body.offer_created_at is before $body.offer_expires_at
-    And the $body.offer_expires_at is after $body.offer_created_at
-    And the $body.offer_expires_at is before {{Properties.clock.endOfLife}}
+    And the body $.offer_created_at is DateTime
+    And the body $.offer_expires_at is before {{Properties.clock.endOfLife}}
+    And the body $.offer_expires_at is after {{HttpRequest.Current.Body.offer_created_at}}
+    And the body $.offer_created_at is before {{HttpRequest.Current.Body.offer_expires_at}}
 
   Scenario:
     Given a HttpRequest

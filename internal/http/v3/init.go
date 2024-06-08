@@ -213,4 +213,25 @@ func onResponse(h *HttpContext) {
 	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*),for %s, matches pattern "([^"]*)"$`, httpRequestRegex), h.AssertNamedHttpRequestResponsePathMatchesPattern)
 	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*), for %s, matches pattern "([^"]*)"$`, httpRequestRegex), h.AssertNamedHttpRequestResponsePathMatchesPattern)
 	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*), for %s, matches pattern "([^"]*)"$`, httpRequestRegex), h.AssertNamedHttpRequestResponsePathMatchesPattern)
+	patterns = map[string]any{
+		"Time":     h.AssertResponsePathIsTime,
+		"Date":     h.AssertResponsePathIsDate,
+		"DateTime": h.AssertResponsePathIsDateTime,
+	}
+	for expr, f := range patterns {
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) is %s$`, expr), f)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) is %s$`, expr), f)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) is %s$`, expr), f)
+	}
+	patterns = map[string]any{
+		"Time":     h.AssertNamedHttpRequestResponsePathIsTime,
+		"Date":     h.AssertNamedHttpRequestResponsePathIsDate,
+		"DateTime": h.AssertNamedHttpRequestResponsePathIsDateTime,
+	}
+	for expr, f := range patterns {
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) for %s is %s$`, httpRequestRegex, expr), f)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) for %s is %s$`, httpRequestRegex, expr), f)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) for %s is %s$`, httpRequestRegex, expr), f)
+	}
+
 }

@@ -426,3 +426,27 @@ func (instance *HttpContext) AssertWhileIgnoringCaseThatNamedHttpRequestResponse
 func (instance *HttpContext) AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathStartsWith(alias, k, value string) error {
 	return nil
 }
+
+func (instance *HttpContext) AssertResponsePathIsTime(k string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponsePathIsDate(k string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponsePathIsDateTime(k string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsTime(alias, k string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsDate(alias, k string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsDateTime(alias, k string) error {
+	return nil
+}
