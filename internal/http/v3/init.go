@@ -233,5 +233,41 @@ func onResponse(h *HttpContext) {
 		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) for %s is %s$`, httpRequestRegex, expr), f)
 		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) for %s is %s$`, httpRequestRegex, expr), f)
 	}
+	patterns = map[string]any{
+		"is same":            h.AssertResponsePathIsSame,
+		"is after":           h.AssertResponsePathIsAfter,
+		"is before":          h.AssertResponsePathIsBefore,
+		"is same or after":   h.AssertResponsePathIsSameOrAfter,
+		"is before or after": h.AssertResponsePathIsSameOrBefore,
+	}
+	for expr, f := range patterns {
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) %s "([^"]*)"$`, expr), f)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) %s "([^"]*)"$`, expr), f)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) %s "([^"]*)"$`, expr), f)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) %s %s$`, expr, valueRegex), f)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) %s %s$`, expr, valueRegex), f)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) %s %s$`, expr, valueRegex), f)
+	}
+	patterns = map[string]any{
+		"is same":            h.AssertNamedHttpRequestResponsePathIsSame,
+		"is after":           h.AssertNamedHttpRequestResponsePathIsAfter,
+		"is before":          h.AssertNamedHttpRequestResponsePathIsBefore,
+		"is same or after":   h.AssertNamedHttpRequestResponsePathIsSameOrAfter,
+		"is before or after": h.AssertNamedHttpRequestResponsePathIsSameOrBefore,
+	}
+	for expr, f := range patterns {
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*), for %s, %s "([^"]*)"$`, httpRequestRegex, expr), f)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*), for %s, %s "([^"]*)"$`, httpRequestRegex, expr), f)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*), for %s, %s "([^"]*)"$`, httpRequestRegex, expr), f)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*), for %s, %s %s$`, httpRequestRegex, expr, valueRegex), f)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*), for %s, %s %s$`, httpRequestRegex, expr, valueRegex), f)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*), for %s, %s %s$`, httpRequestRegex, expr, valueRegex), f)
+	}
+	h.ctx.GerkhinContext().Then(`^(?i)response body \$.(.*) length is (\d+)$`, h.AssertResponsePathLengthIs)
+	h.ctx.GerkhinContext().Then(`^(?i)the response body \$.(.*) length is (\d+)$`, h.AssertResponsePathLengthIs)
+	h.ctx.GerkhinContext().Then(`^(?i)the Response body \$.(.*) length is (\d+)$`, h.AssertResponsePathLengthIs)
+	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) length for %s is (\d+)$`, httpRequestRegex), h.AssertNamedHttpRequestResponsePathLengthIs)
+	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) length for %s is (\d+)$`, httpRequestRegex), h.AssertNamedHttpRequestResponsePathLengthIs)
+	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) length for %s is (\d+)$`, httpRequestRegex), h.AssertNamedHttpRequestResponsePathLengthIs)
 
 }

@@ -450,3 +450,51 @@ func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsDate(alias, k s
 func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsDateTime(alias, k string) error {
 	return nil
 }
+
+func (instance *HttpContext) AssertResponsePathIsSame(k, v string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponsePathIsAfter(k, v string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponsePathIsSameOrAfter(k, v string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponsePathIsSameOrBefore(k, v string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponsePathIsBefore(k, v string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsSame(k, v string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsAfter(k, v string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsSameOrAfter(k, v string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsSameOrBefore(k, v string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsBefore(k, v string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponsePathLengthIs(k string, float64 string) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathLengthIs(alias, k string, float64 string) error {
+	return nil
+}

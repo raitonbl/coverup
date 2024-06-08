@@ -45,7 +45,6 @@ Feature: Design
     Then the response status code is 200
     And the content-type is application/json
     And the $body.about length is 3
-    And the $body.about is not empty
     And the $body.about[0] starts with "One Touch SSD"
     And the $body.tags[0].name is "IT"
     And the $body.tags[*].name is "IT"
