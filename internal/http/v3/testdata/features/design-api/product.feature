@@ -60,8 +60,8 @@ Feature: Design
     Then the response status code is 200
     And the content-type is application/json
     And the $body.warranty.amount is greater than 1
-    And the $body.warranty.unit is part of ["years","months","days"}
-    And the $body.price.amount is greater of equal to 200
+    And the $body.warranty.unit is part of ["years","months","days"]
+    And the $body.price.amount is greater or equal to 200
     And the $body.characteristics.capacity.amount is lesser or equal to 1
     And the $body.characteristics.hard_disk_form_factor.amount than 2.6
 

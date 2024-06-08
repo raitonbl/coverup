@@ -269,5 +269,30 @@ func onResponse(h *HttpContext) {
 	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) length for %s is (\d+)$`, httpRequestRegex), h.AssertNamedHttpRequestResponsePathLengthIs)
 	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) length for %s is (\d+)$`, httpRequestRegex), h.AssertNamedHttpRequestResponsePathLengthIs)
 	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) length for %s is (\d+)$`, httpRequestRegex), h.AssertNamedHttpRequestResponsePathLengthIs)
+	patterns = map[string]any{
+		"lesser":              []any{h.AssertResponsePathIsLesserThan, h.AssertNamedHttpRequestResponsePathIsLesserThan},
+		"greater than":        []any{h.AssertResponsePathIsGreaterThan, h.AssertNamedHttpRequestResponsePathIsGreaterThan},
+		"lesser or equal to":  []any{h.AssertResponsePathIsLesserThanOrEqualTo, h.AssertNamedHttpRequestResponsePathIsLesserThanOrEqualTo},
+		"greater or equal to": []any{h.AssertResponsePathIsGreaterThanOrEqualTo, h.AssertNamedHttpRequestResponsePathIsGreaterThanOrEqualTo},
+	}
+	for k, opts := range patterns {
+		for _, f := range opts.([]any) {
+			h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) is %s (\d+)$`, k), f)
+			h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) is %s (\d+)$`, k), f)
+			h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) is %s (\d+)$`, k), f)
+			h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) is %s %s$`, k, valueRegex), f)
+			h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) is %s %s$`, k, valueRegex), f)
+			h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) is %s %s$`, k, valueRegex), f)
+		}
+	}
+	patterns = map[string]any{
+		`\["[^"]*"(?:,"[^"]*")*\]`: nil,
+		`\["\d+"(?:,"\d+")*\]`:     nil,
+	}
+	for expr, f := range patterns {
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body \$.(.*) is part of %s$`, expr), nil)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body \$.(.*) is part of %s$`, expr), nil)
+		h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body \$.(.*) is part of %s$`, expr), nil)
+	}
 
 }

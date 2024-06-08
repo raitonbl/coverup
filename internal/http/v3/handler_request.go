@@ -491,10 +491,42 @@ func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsBefore(k, v str
 	return nil
 }
 
-func (instance *HttpContext) AssertResponsePathLengthIs(k string, float64 string) error {
+func (instance *HttpContext) AssertResponsePathLengthIs(k string, value float64) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathLengthIs(alias, k string, float64 string) error {
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathLengthIs(alias, k string, value float64) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponsePathIsGreaterThan(k string, value float64) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponsePathIsGreaterThanOrEqualTo(k string, value float64) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponsePathIsLesserThan(k string, value float64) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertResponsePathIsLesserThanOrEqualTo(k string, value float64) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsGreaterThan(alias, k string, value float64) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsGreaterThanOrEqualTo(alias, k string, value float64) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsLesserThan(alias, k string, value float64) error {
+	return nil
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsLesserThanOrEqualTo(alias, k string, value float64) error {
 	return nil
 }
