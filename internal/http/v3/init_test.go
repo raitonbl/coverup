@@ -43,6 +43,7 @@ func doApply(t *testing.T, filename string, f func(int) error) {
 				},
 			},
 			Output: colors.Colored(os.Stdout),
+			Strict: true,
 		},
 		ScenarioInitializer: func(gherkinContext *godog.ScenarioContext) {
 			ctxt := &V3Context{
