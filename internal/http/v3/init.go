@@ -3,6 +3,7 @@ package v3
 import (
 	"fmt"
 	v3 "github.com/raitonbl/coverup/internal/v3"
+	"strings"
 )
 
 const serverURLRegex = `(https?://[^\s]+)`
@@ -24,63 +25,30 @@ func onRequest(h *HttpContext) {
 	h.ctx.GerkhinContext().Given(`^(?i)a HttpRequest$`, h.WithRequest)
 	h.ctx.GerkhinContext().Given(`(?i)^a HttpRequest named (.+)$`, h.WithRequestWhenAlias)
 	// Define method
-	h.ctx.GerkhinContext().Step(`^(?i)method is ([^"]*)$`, h.WithMethod)
-	h.ctx.GerkhinContext().Step(`^(?i)the method is ([^"]*)$`, h.WithMethod)
+	setRequestLinePart(h, `method is ([^"]*)$`, h.WithMethod)
 	// Define headers
-	h.ctx.GerkhinContext().Step(`^(?i)headers:$`, h.WithHeaders)
-	h.ctx.GerkhinContext().Step(`^(?i)the headers:$`, h.WithHeaders)
-	h.ctx.GerkhinContext().Step(`^(?i)header (.*) is "([^"]*)"$`, h.WithHeader)
-	h.ctx.GerkhinContext().Step(`^(?i)the header (.*) is "([^"]*)"$`, h.WithHeader)
-	h.ctx.GerkhinContext().Step(`^(?i)the Header (.*) is "([^"]*)"$`, h.WithHeader)
-	h.ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)header (.*) is "%s"$`, valueRegex), h.WithHeader)
-	h.ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)the header (.*) is "%s"$`, valueRegex), h.WithHeader)
-	h.ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)the Header (.*) is "%s"$`, valueRegex), h.WithHeader)
-	h.ctx.GerkhinContext().Step(`^(?i)accept is "([^"]*)"$`, h.WithAcceptHeader)
-	h.ctx.GerkhinContext().Step(`^(?i)the accept is "([^"]*)"$`, h.WithAcceptHeader)
-	h.ctx.GerkhinContext().Step(`^(?i)the Accept is "([^"]*)"$`, h.WithAcceptHeader)
-	h.ctx.GerkhinContext().Step(`^(?i)content-type is "([^"]*)"$`, h.WithContentTypeHeader)
-	h.ctx.GerkhinContext().Step(`^(?i)the content-type is "([^"]*)"$`, h.WithContentTypeHeader)
-	h.ctx.GerkhinContext().Step(`^(?i)the Content-type is "([^"]*)"$`, h.WithContentTypeHeader)
+	setRequestLinePart(h, `headers:$`, h.WithHeaders)
+	setRequestLinePart(h, fmt.Sprintf(`header (.*) is "%s"$`, valueRegex), h.WithHeader)
+	setRequestLinePart(h, `header (.*) is "([^"]*)"$`, h.WithHeader)
+	setRequestLinePart(h, `accept is "([^"]*)"$`, h.WithAcceptHeader)
+	setRequestLinePart(h, `content-type is "([^"]*)"$`, h.WithContentTypeHeader)
 	// Server URL & Path
-	h.ctx.GerkhinContext().Step(`^(?i)path is http://(.+)$`, h.WithHttpPath)
-	h.ctx.GerkhinContext().Step(`^(?i)the path is http://(.+)$`, h.WithHttpPath)
-	h.ctx.GerkhinContext().Step(`^(?i)the Path is http://(.+)$`, h.WithHttpPath)
-	h.ctx.GerkhinContext().Step(`^(?i)path is https://(.+)$`, h.WithHttpsPath)
-	h.ctx.GerkhinContext().Step(`^(?i)the path is https://(.+)$`, h.WithHttpsPath)
-	h.ctx.GerkhinContext().Step(`^(?i)the Path is https://(.+)$`, h.WithHttpsPath)
-	h.ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)path is %s$`, valueRegex), h.WithPath)
-	h.ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)the path is %s$`, valueRegex), h.WithPath)
-	h.ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)the Path is %s$`, valueRegex), h.WithPath)
-	h.ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)path is %s$`, relativeURIRegex), h.WithPath)
-	h.ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)the path is %s$`, relativeURIRegex), h.WithPath)
-	h.ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)the Path is %s$`, relativeURIRegex), h.WithPath)
-	h.ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)server url is %s$`, serverURLRegex), h.WithServerURL)
-	h.ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)the server url is %s$`, serverURLRegex), h.WithServerURL)
-	h.ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)the Server url is %s$`, serverURLRegex), h.WithServerURL)
+	setRequestLinePart(h, `path is http://(.+)$`, h.WithHttpPath)
+	setRequestLinePart(h, `path is https://(.+)$`, h.WithHttpsPath)
+	setRequestLinePart(h, fmt.Sprintf(`path is %s$`, valueRegex), h.WithPath)
+	setRequestLinePart(h, fmt.Sprintf(`path is %s$`, relativeURIRegex), h.WithPath)
+	setRequestLinePart(h, fmt.Sprintf(`server url is %s$`, serverURLRegex), h.WithServerURL)
 	//Body
-	h.ctx.GerkhinContext().Step(`^(?i)body is:$`, h.WithBody)
-	h.ctx.GerkhinContext().Step(`^(?i)the body is:$`, h.WithBody)
-	h.ctx.GerkhinContext().Step(`^(?i)the Body is:$`, h.WithBody)
-	h.ctx.GerkhinContext().Step(`^(?i)body is file://(.+)$`, h.WithBodyFileURI)
-	h.ctx.GerkhinContext().Step(`^(?i)the body is file://(.+)$`, h.WithBodyFileURI)
-	h.ctx.GerkhinContext().Step(`^(?i)the Body is file://(.+)$`, h.WithBodyFileURI)
+	setRequestLinePart(h, `body is:$`, h.WithBody)
+	setRequestLinePart(h, `body is file://(.+)$`, h.WithBodyFileURI)
 	//Form
-	h.ctx.GerkhinContext().Step(`^(?i)form enctype is ([^"]*)$`, h.WithFormEncType)
-	h.ctx.GerkhinContext().Step(`^(?i)the form enctype is ([^"]*)$`, h.WithFormEncType)
-	h.ctx.GerkhinContext().Step(`^(?i)the Form enctype is ([^"]*)$`, h.WithFormEncType)
-	h.ctx.GerkhinContext().Step(`^(?i)form attribute "([a-zA-Z_]+)" is "([^"]+)"$`, h.WithFormAttribute)
-	h.ctx.GerkhinContext().Step(`^(?i)the form attribute "([a-zA-Z_]+)" is "([^"]+)"$`, h.WithFormAttribute)
-	h.ctx.GerkhinContext().Step(`^(?i)the Form attribute "([a-zA-Z_]+)" is "([^"]+)"$`, h.WithFormAttribute)
-	h.ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)form attribute "%s"$`, valueRegex), h.WithFormAttribute)
-	h.ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)the form attribute "%s"$`, valueRegex), h.WithFormAttribute)
-	h.ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)the Form attribute "%s"$`, valueRegex), h.WithFormAttribute)
-	h.ctx.GerkhinContext().Step(`^(?i)form attribute "([a-zA-Z_]+)" is file://(.+)$`, h.WithFormFile)
-	h.ctx.GerkhinContext().Step(`^(?i)the form attribute "([a-zA-Z_]+)" is file://(.+)$`, h.WithFormFile)
-	h.ctx.GerkhinContext().Step(`^(?i)the Form attribute "([a-zA-Z_]+)" is file://(.+)$`, h.WithFormFile)
-	h.ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)form attribute "([a-zA-Z_]+)" is file://%s`, valueRegex), h.WithFormFile)
-	h.ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)the form attribute "([a-zA-Z_]+)" is file://%s`, valueRegex), h.WithFormFile)
-	h.ctx.GerkhinContext().Step(fmt.Sprintf(`^(?i)the Form attribute "([a-zA-Z_]+)" is file://%s`, valueRegex), h.WithFormFile)
+	setRequestLinePart(h, `form enctype is ([^"]*)$`, h.WithFormEncType)
+	setRequestLinePart(h, `form attribute "([a-zA-Z_]+)" is "([^"]+)"$`, h.WithFormAttribute)
+	setRequestLinePart(h, fmt.Sprintf(`form attribute "([a-zA-Z_]+)" is "%s"$`, valueRegex), h.WithFormAttribute)
+	setRequestLinePart(h, `form attribute "([a-zA-Z_]+)" is file://(.+)$`, h.WithFormFile)
+	setRequestLinePart(h, fmt.Sprintf(`form attribute "([a-zA-Z_]+)" is file://%s`, valueRegex), h.WithFormFile)
 	// Submit
+
 	h.ctx.GerkhinContext().When("^(?i)client submits the HttpRequest", h.SubmitHttpRequest)
 	h.ctx.GerkhinContext().When("^(?i)the client submits the HttpRequest", h.SubmitHttpRequest)
 	h.ctx.GerkhinContext().When("^(?i)the Client submits the HttpRequest", h.SubmitHttpRequest)
@@ -91,6 +59,12 @@ func onRequest(h *HttpContext) {
 	h.ctx.GerkhinContext().When(fmt.Sprintf("^(?i)the Client submits %s", httpRequestRegex), h.SubmitNamedHttpRequest)
 	h.ctx.GerkhinContext().When(fmt.Sprintf("%s submits %s", entityRegex, httpRequestRegex), h.SubmitNamedHttpRequestOnBehalfOfEntity)
 	h.ctx.GerkhinContext().When(fmt.Sprintf("^(?i)the %s submits %s", entityRegex, httpRequestRegex), h.SubmitNamedHttpRequestOnBehalfOfEntity)
+}
+
+func setRequestLinePart(h *HttpContext, expr string, f any) {
+	h.ctx.GerkhinContext().Step(`^(?i)`+expr, f)
+	h.ctx.GerkhinContext().Step(`^(?i)the `+expr, f)
+	h.ctx.GerkhinContext().Step(`^(?i)the `+strings.ToUpper(string(expr[0]))+expr[1:], f)
 }
 
 func onResponse(h *HttpContext) {
