@@ -1,7 +1,6 @@
 package v3
 
 import (
-	"fmt"
 	"github.com/cucumber/godog"
 	"github.com/cucumber/godog/colors"
 	v3 "github.com/raitonbl/coverup/internal/v3"
@@ -53,6 +52,5 @@ type FnHttpClient struct {
 
 func (f *FnHttpClient) Do(req *http.Request) (*http.Response, error) {
 	k := req.Method + " " + req.URL.String()
-	fmt.Println(">>>> " + k)
 	return f.m[k](req)
 }

@@ -346,12 +346,33 @@ func (instance *HttpContext) doSubmitHttpRequest(src *HttpRequest) error {
 	return nil
 }
 
+func (instance *HttpContext) onNamedResponse(alias string, f func(*HttpRequest, *HttpResponse) error) error {
+	return instance.onNamedHttpRequest(alias, func(req *HttpRequest) error {
+		if req.response == nil {
+			if alias == "" {
+				return fmt.Errorf(`%s needs to be submitted before making assertions`, ComponentType)
+			} else {
+				return fmt.Errorf(`%s["%s"] needs to be submitted before making assertions`, ComponentType, alias)
+			}
+		}
+		return f(req, req.response)
+	})
+}
+
 func (instance *HttpContext) AssertResponseStatusCode(statusCode int) error {
-	return nil
+	return instance.AssertNamedHttpRequestResponseStatusCode("", statusCode)
 }
 
 func (instance *HttpContext) AssertNamedHttpRequestResponseStatusCode(alias string, statusCode int) error {
-	return nil
+	return instance.onNamedResponse(alias, func(_ *HttpRequest, response *HttpResponse) error {
+		if response.statusCode != statusCode {
+			if alias == "" {
+				return fmt.Errorf("%s.StatusCode should be %d but instead got %d", ComponentType, statusCode, response.statusCode)
+			}
+			return fmt.Errorf(`%s["%s"].StatusCode should be %d but instead got %d`, ComponentType, alias, statusCode, response.statusCode)
+		}
+		return nil
+	})
 }
 
 func (instance *HttpContext) AssertNamedHttpRequestResponseExactHeaders(alias string, table *godog.Table) error {
