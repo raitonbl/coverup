@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/cucumber/godog"
-	v3 "github.com/raitonbl/coverup/internal/v3"
 	"github.com/raitonbl/coverup/pkg"
 	"io"
 	"net/http"
@@ -15,18 +14,14 @@ const fileURISchema = "file://"
 const ComponentType = "HttpRequest"
 
 type HttpContext struct {
-	ctx v3.ScenarioContext
+	ctx ScenarioContext
 }
 
 func (instance *HttpContext) WithRequest() error {
-	return instance.withRequest("")
+	return instance.WithRequestWhenAlias("")
 }
 
 func (instance *HttpContext) WithRequestWhenAlias(alias string) error {
-	return instance.withRequest(alias)
-}
-
-func (instance *HttpContext) withRequest(alias string) error {
 	return instance.ctx.Register(ComponentType, &HttpRequest{
 		headers: make(map[string]string),
 	}, alias)
