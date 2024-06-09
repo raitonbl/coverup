@@ -4,7 +4,7 @@ Feature: Design
     Given a HttpRequest
     And the headers:
       | content-type | application/json |
-    And method is GET
+    And the Method is GET
     And path is /persons/27258303-9ebc-4b84-a17e-f886161ab2f5
     And server url is https://localhost:8443
     When the client submits the HttpRequest
@@ -24,7 +24,7 @@ Feature: Design
     Given a HttpRequest
     And the headers:
       | content-type | application/json |
-    And method is GET
+    And the method is GET
     And path is /persons/{{Properties.entities.default.id}}
     And server url is https://localhost:8443
     When the client submits the HttpRequest
