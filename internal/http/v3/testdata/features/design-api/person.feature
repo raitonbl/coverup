@@ -19,7 +19,6 @@ Feature: Design
     And the response body $.is_eligible is true
     And the response body $.id is "27258303-9ebc-4b84-a17e-f886161ab2f5"
 
-
   Scenario:
     Given a HttpRequest
     And the headers:
