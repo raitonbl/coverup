@@ -2,6 +2,7 @@ package context
 
 import (
 	"errors"
+	"github.com/raitonbl/coverup/pkg"
 	"github.com/stretchr/testify/require"
 	"strings"
 	"testing"
@@ -40,10 +41,10 @@ func TestBuilder_ResolveOrGetValue(t *testing.T) {
 	}
 	b := Builder{
 		context: nil,
-		references: map[string]Component{
+		references: map[string]pkg.Component{
 			"DefaultComponent": c,
 		},
-		aliases: map[string]map[string]Component{
+		aliases: map[string]map[string]pkg.Component{
 			"DefaultComponent": {
 				"R": c,
 			},

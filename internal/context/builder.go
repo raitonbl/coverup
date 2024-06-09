@@ -11,19 +11,19 @@ var valueRegexp = regexp.MustCompile(`{{\s*([\w.]+)\s*}}`)
 
 type Builder struct {
 	context    Context
-	references map[string]Component
-	aliases    map[string]map[string]Component
+	references map[string]pkg.Component
+	aliases    map[string]map[string]pkg.Component
 }
 
 func New(ctx Context) *Builder {
 	return &Builder{
 		context:    ctx,
-		references: make(map[string]Component),
-		aliases:    make(map[string]map[string]Component),
+		references: make(map[string]pkg.Component),
+		aliases:    make(map[string]map[string]pkg.Component),
 	}
 }
 
-func (instance *Builder) GetComponent(componentType string, alias string) Component {
+func (instance *Builder) GetComponent(componentType string, alias string) pkg.Component {
 	if alias != "" {
 		if components, exists := instance.aliases[componentType]; exists {
 			return components[alias]
@@ -33,10 +33,10 @@ func (instance *Builder) GetComponent(componentType string, alias string) Compon
 	return instance.references[componentType]
 }
 
-func (instance *Builder) WithComponent(componentType string, ptr Component, alias string) error {
+func (instance *Builder) WithComponent(componentType string, ptr pkg.Component, alias string) error {
 	if alias != "" {
 		if _, hasValue := instance.aliases[componentType]; !hasValue {
-			instance.aliases[componentType] = make(map[string]Component)
+			instance.aliases[componentType] = make(map[string]pkg.Component)
 		}
 		if _, hasValue := instance.aliases[componentType][alias]; hasValue {
 			return fmt.Errorf("%s with alias %s cannot be defined more than once", componentType, alias)
@@ -92,7 +92,7 @@ func (instance *Builder) getValueFromExpression(key, expr string, cache map[stri
 	return v, nil
 }
 
-func (instance *Builder) getComponentOrElseThrow(componentType, componentId string) (Component, error) {
+func (instance *Builder) getComponentOrElseThrow(componentType, componentId string) (pkg.Component, error) {
 	components, hasValue := instance.aliases[componentType]
 	if !hasValue {
 		return nil, fmt.Errorf("component %s.%s has not been defined yet", componentType, componentId)

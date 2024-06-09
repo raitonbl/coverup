@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/cucumber/godog"
 	"github.com/cucumber/godog/colors"
-	"github.com/raitonbl/coverup/internal/context"
 	"github.com/raitonbl/coverup/pkg"
 	"os"
 	"strings"
@@ -49,10 +48,10 @@ func doApply(t *testing.T, filename string, f func(int) error) {
 			ctxt := &V3Context{
 				workDirectory:  workDir,
 				gherkinContext: gherkinContext,
-				references:     make(map[string]context.Component),
-				aliases:        make(map[string]map[string]context.Component),
+				references:     make(map[string]pkg.Component),
+				aliases:        make(map[string]map[string]pkg.Component),
 			}
-			onHTTP(ctxt)
+			On(ctxt)
 		},
 	}.Run()
 	if f != nil {
@@ -67,8 +66,8 @@ func doApply(t *testing.T, filename string, f func(int) error) {
 type V3Context struct {
 	workDirectory  string
 	gherkinContext *godog.ScenarioContext
-	references     map[string]context.Component
-	aliases        map[string]map[string]context.Component
+	references     map[string]pkg.Component
+	aliases        map[string]map[string]pkg.Component
 }
 
 func (instance *V3Context) GetServerURL() string {
@@ -97,10 +96,10 @@ func (instance *V3Context) GerkhinContext() *godog.ScenarioContext {
 	return instance.gherkinContext
 }
 
-func (instance *V3Context) Register(componentType string, ptr context.Component, alias string) error {
+func (instance *V3Context) Register(componentType string, ptr pkg.Component, alias string) error {
 	if alias != "" {
 		if _, hasValue := instance.aliases[componentType]; !hasValue {
-			instance.aliases[componentType] = make(map[string]context.Component)
+			instance.aliases[componentType] = make(map[string]pkg.Component)
 		}
 		if _, hasValue := instance.aliases[componentType][alias]; hasValue {
 			return fmt.Errorf("%s with alias %s cannot be defined more than once", componentType, alias)

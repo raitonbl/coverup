@@ -3,7 +3,7 @@ package v3
 import (
 	"github.com/cucumber/godog"
 	"github.com/cucumber/messages/go/v21"
-	"github.com/raitonbl/coverup/internal/context"
+	"github.com/raitonbl/coverup/pkg"
 	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
@@ -12,8 +12,8 @@ import (
 func TestHttpContext_WithRequest(t *testing.T) {
 	c := &HttpContext{
 		ctx: &V3Context{
-			references: make(map[string]context.Component),
-			aliases:    make(map[string]map[string]context.Component),
+			references: make(map[string]pkg.Component),
+			aliases:    make(map[string]map[string]pkg.Component),
 		},
 	}
 	err := c.WithRequest()
@@ -25,8 +25,8 @@ func TestHttpContext_WithRequest(t *testing.T) {
 func TestHttpContext_WithRequestWhenAlias(t *testing.T) {
 	c := &HttpContext{
 		ctx: &V3Context{
-			references: make(map[string]context.Component),
-			aliases:    make(map[string]map[string]context.Component),
+			references: make(map[string]pkg.Component),
+			aliases:    make(map[string]map[string]pkg.Component),
 		},
 	}
 	err := c.WithRequestWhenAlias("SendSmsRequest")
@@ -296,8 +296,8 @@ func doOnRequest(t *testing.T, action func(*HttpContext), doAssert func(*HttpCon
 	c := &HttpContext{
 		ctx: &V3Context{
 			workDirectory: home,
-			references:    make(map[string]context.Component),
-			aliases:       make(map[string]map[string]context.Component),
+			references:    make(map[string]pkg.Component),
+			aliases:       make(map[string]map[string]pkg.Component),
 		},
 	}
 	err = c.WithRequest()

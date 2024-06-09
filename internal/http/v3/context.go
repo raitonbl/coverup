@@ -1,10 +1,13 @@
 package v3
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/cucumber/godog"
 	v3 "github.com/raitonbl/coverup/internal/v3"
 	"github.com/raitonbl/coverup/pkg"
+	"io"
+	"net/http"
 	"strings"
 )
 
@@ -30,7 +33,11 @@ func (instance *HttpContext) withRequest(alias string) error {
 }
 
 func (instance *HttpContext) onHttpRequest(f func(*HttpRequest) error) error {
-	valueOf, err := instance.ctx.GetComponent(ComponentType, "")
+	return instance.onNamedHttpRequest("", f)
+}
+
+func (instance *HttpContext) onNamedHttpRequest(alias string, f func(*HttpRequest) error) error {
+	valueOf, err := instance.ctx.GetComponent(ComponentType, alias)
 	if err != nil {
 		return err
 	}
@@ -112,7 +119,7 @@ func (instance *HttpContext) WithPath(path string) error {
 		if err != nil {
 			return err
 		}
-		req.path = fmt.Sprintf("%v", valueOf)
+		req.path = fmt.Sprintf("/%v", valueOf)
 		return nil
 	})
 }
@@ -259,19 +266,83 @@ func (instance *HttpContext) onForm(s func(*Form) error) error {
 	})
 }
 
+func (instance *HttpContext) get(alias string) (*HttpRequest, error) {
+	valueOf, err := instance.ctx.GetComponent(ComponentType, alias)
+	if err != nil {
+		return nil, err
+	}
+	req, isHttpRequest := valueOf.(*HttpRequest)
+	if !isHttpRequest {
+		if alias == "" {
+			return nil, fmt.Errorf(`%s is undefined and needs to be defined before referencing it`, ComponentType)
+		}
+		return nil, fmt.Errorf(`%s["%s"] is undefined and needs to be defined before referencing it`, ComponentType, alias)
+	}
+	return req, nil
+}
+
 func (instance *HttpContext) SubmitHttpRequest() error {
-	return nil
+	return instance.SubmitNamedHttpRequestOnBehalfOfEntity("", "")
 }
 
 func (instance *HttpContext) SubmitHttpRequestOnBehalfOfEntity(id string) error {
-	return nil
+	return instance.SubmitNamedHttpRequestOnBehalfOfEntity("", id)
 }
 
 func (instance *HttpContext) SubmitNamedHttpRequest(alias string) error {
-	return nil
+	return instance.SubmitNamedHttpRequestOnBehalfOfEntity(alias, "")
 }
 
 func (instance *HttpContext) SubmitNamedHttpRequestOnBehalfOfEntity(alias, id string) error {
+	return instance.onNamedHttpRequest(alias, func(req *HttpRequest) error {
+		if id != "" {
+			panic("not implemented")
+		}
+		if req.response != nil {
+			return fmt.Errorf(`cannot submit the same %s more than once`, ComponentType)
+		}
+		return instance.doSubmitHttpRequest(req)
+	})
+}
+
+func (instance *HttpContext) doSubmitHttpRequest(src *HttpRequest) error {
+	var body io.Reader
+	if src.body != nil {
+		body = bytes.NewReader(src.body)
+	}
+	serverURI := src.serverURL
+	if src.path != "" {
+		serverURI += src.path
+	}
+	req, err := http.NewRequest(src.method, serverURI, body)
+	if err != nil {
+		return fmt.Errorf("creating request: %w", err)
+	}
+	for k, v := range src.headers {
+		req.Header.Set(k, v)
+	}
+	httpClient := instance.ctx.GetHttpClient()
+	if httpClient == nil {
+		httpClient = &http.Client{}
+	}
+	res, err := httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("sending request: %w", err)
+	}
+	binary, err := io.ReadAll(res.Body)
+	if err != nil {
+		return fmt.Errorf("sending request: %w", err)
+	}
+	headers := make(map[string]string)
+	for k, v := range res.Header {
+		req.Header.Set(k, strings.Join(v, ","))
+	}
+	src.response = &HttpResponse{
+		body:       binary,
+		headers:    headers,
+		statusCode: res.StatusCode,
+		pathCache:  make(map[string]any),
+	}
 	return nil
 }
 

@@ -5,8 +5,8 @@ Feature: Design
     And the headers:
       | content-type | application/json |
     And the Method is GET
-    And path is /persons/27258303-9ebc-4b84-a17e-f886161ab2f5
     And server url is https://localhost:8443
+    And path is /persons/27258303-9ebc-4b84-a17e-f886161ab2f5
     When the client submits the HttpRequest
     Then the response status code is 200
     And the response content-type is "application/json"
