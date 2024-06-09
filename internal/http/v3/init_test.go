@@ -52,7 +52,7 @@ func doApply(t *testing.T, filename string, f func(int) error) {
 				references:     make(map[string]context.Component),
 				aliases:        make(map[string]map[string]context.Component),
 			}
-			Set(ctxt)
+			onHTTP(ctxt)
 		},
 	}.Run()
 	if f != nil {

@@ -12,7 +12,7 @@ const valueRegex = `\{\{\s*([a-zA-Z0-9_]+\.)*[a-zA-Z0-9_]+\s*\}\}`
 const httpRequestRegex = `\{\{\s*HttpRequest\.[a-zA-Z0-9_]+\s*\}\}`
 const entityRegex = `\{\{\s*Entity\.[a-zA-Z0-9_]+\s*\}\}`
 
-func Set(ctx v3.ScenarioContext) {
+func onHTTP(ctx v3.ScenarioContext) {
 	h := &HttpContext{
 		ctx: ctx,
 	}
