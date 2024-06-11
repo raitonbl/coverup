@@ -47,7 +47,6 @@ func onRequest(h *HttpContext) {
 	setRequestLinePart(h, `form attribute "([a-zA-Z_]+)" is file://(.+)$`, h.WithFormFile)
 	setRequestLinePart(h, fmt.Sprintf(`form attribute "([a-zA-Z_]+)" is file://%s`, valueRegex), h.WithFormFile)
 	// Submit
-
 	h.ctx.GerkhinContext().When("^(?i)client submits the HttpRequest", h.SubmitHttpRequest)
 	h.ctx.GerkhinContext().When("^(?i)the client submits the HttpRequest", h.SubmitHttpRequest)
 	h.ctx.GerkhinContext().When("^(?i)the Client submits the HttpRequest", h.SubmitHttpRequest)
@@ -110,29 +109,50 @@ func onResponseHeaders(h *HttpContext) {
 }
 
 func onResponseBodyPathCompareTo(h *HttpContext) {
-	patterns := map[string][]any{
-		`"([^"]*)"`:       {h.AssertResponseBodyPathEqualsTo, h.AssertNamedHttpRequestResponseBodyPathEqualsTo},
-		valueRegex:        {h.AssertResponseBodyPathEqualsToValue, h.AssertNamedHttpRequestResponseBodyPathEqualsToValue},
-		`(-?\d+(\.\d+)?)`: {h.AssertResponseBodyPathEqualsToFloat64, h.AssertNamedHttpRequestResponseBodyPathEqualsToFloat64},
-		`(true|false)`:    {h.AssertResponseBodyPathEqualsToBoolean, h.AssertNamedHttpRequestResponseBodyPathEqualsToBoolean},
+	vars := map[string]HandlerFactory{
+		`"([^"]*)"`:       HandlerFactory(createResponseBodyPathEqualTo),
+		valueRegex:        HandlerFactory(createResponseBodyPathEqualTo),
+		`(-?\d+(\.\d+)?)`: HandlerFactory(createResponseBodyPathEqualToFloat64),
+		`(true|false)`:    HandlerFactory(createResponseBodyPathEqualToBoolean),
 	}
-	for pattern, opts := range patterns {
-		assertResponseBodyPath(h, `is `+pattern, opts[0], opts[1])
+	verbs := []string{"is", "isn't"}
+	for pattern, f := range vars {
+		for _, verb := range verbs {
+			isTrue := verb == verbs[0]
+			assertResponseBodyPath(h, verb+` `+pattern, f(h, Opts{isAffirmation: isTrue, isAliasAware: false}), f(h, Opts{isAffirmation: isTrue, isAliasAware: true}))
+		}
 	}
-	patterns = map[string][]any{
-		"contains":    {h.AssertResponsePathContains, h.AssertWhileIgnoringCaseThatResponsePathContains, h.AssertNamedHttpRequestResponsePathContains, h.AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathContains},
-		"ends with":   {h.AssertResponsePathEndsWith, h.AssertWhileIgnoringCaseThatResponsePathEndsWith, h.AssertNamedHttpRequestResponsePathEndsWith, h.AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathEndsWith},
-		"starts with": {h.AssertResponsePathStartsWith, h.AssertWhileIgnoringCaseThatResponsePathStartsWith, h.AssertNamedHttpRequestResponsePathStartsWith, h.AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathStartsWith},
+	vars = map[string]HandlerFactory{
+		"contains":    createResponseBodyPathContains,
+		"ends with":   createResponseBodyPathEndsWith,
+		"starts with": createResponseBodyPathStartsWith,
+	}
+	n := map[string]string{
+		"contains":    "contain",
+		"ends with":   "end with",
+		"starts with": "start with",
 	}
 	valueOpts := []string{`"([^"]*)"$`, valueRegex}
-	for k, arr := range patterns {
+	verbs = []string{"", "doesn't"}
+	for k, f := range vars {
 		for i := 0; i < 2; i++ {
 			for _, opt := range valueOpts {
-				expr := k
-				if i == 1 {
-					expr = "ignoring case " + k
+				for _, verb := range verbs {
+					pattern := ""
+					if i == 1 {
+						pattern = "ignoring case"
+					}
+					if verb == verbs[1] {
+						pattern += " " + verb + " " + n[k]
+					} else if pattern == "" {
+						pattern = k
+					} else {
+						pattern += " " + k
+					}
+					isTrue := verb == verbs[0]
+					assertResponseBodyPath(h, pattern+` `+opt, f(h, Opts{isAffirmation: isTrue, isAliasAware: false, ignoreCase: i == 1, interpolateValue: true}),
+						f(h, Opts{isAffirmation: isTrue, isAliasAware: true, ignoreCase: i == 1, interpolateValue: true}))
 				}
-				assertResponseBodyPath(h, fmt.Sprintf(`%s %s$`, expr, opt), arr[i], arr[i+2])
 			}
 		}
 	}

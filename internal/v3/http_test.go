@@ -139,6 +139,7 @@ func TestHttpContext_AssertSimpleAttribute(m *testing.T) {
 	id := "27258303-9ebc-4b84-a17e-f886161ab2f5"
 	opts := []string{
 		`response body $.id is "` + id + `"`,
+		`response body $.id isn't "RaitonBL"`,
 		`response body $.summary contains "SSD"`,
 		`response body $.summary ignoring case contains "ssd"`,
 		`response body $.name starts with "Seagate"`,
