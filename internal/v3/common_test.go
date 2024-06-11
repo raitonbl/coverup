@@ -4,15 +4,18 @@ import (
 	"github.com/cucumber/godog"
 	"github.com/cucumber/godog/colors"
 	"github.com/raitonbl/coverup/pkg"
+	"io/fs"
 	"net/http"
 	"os"
 	"testing"
 )
 
-func Exec(t *testing.T, definition []byte, c map[string]func(*http.Request) (*http.Response, error), _ map[string][]byte) {
-	workDirectory, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
+func Exec(t *testing.T, definition []byte, c map[string]func(*http.Request) (*http.Response, error), fm map[string]func() ([]byte, error)) {
+	filesystem := &FnFS{
+		fm,
+	}
+	if fm != nil {
+		filesystem.m = fm
 	}
 	httpClient := &FnHttpClient{
 		c,
@@ -21,6 +24,7 @@ func Exec(t *testing.T, definition []byte, c map[string]func(*http.Request) (*ht
 		TestSuiteInitializer: nil,
 		Options: &godog.Options{
 			TestingT:      t,
+			Strict:        true,
 			StopOnFailure: true,
 			Format:        "pretty",
 			Paths:         []string{},
@@ -33,11 +37,11 @@ func Exec(t *testing.T, definition []byte, c map[string]func(*http.Request) (*ht
 		},
 		ScenarioInitializer: func(goDogCtx *godog.ScenarioContext) {
 			ctx := &DefaultScenarioContext{
-				GoDogContext:  goDogCtx,
-				HttpClient:    httpClient,
-				WorkDirectory: workDirectory,
-				References:    make(map[string]pkg.Component),
-				Aliases:       make(map[string]map[string]pkg.Component),
+				Filesystem:   filesystem,
+				GoDogContext: goDogCtx,
+				HttpClient:   httpClient,
+				References:   make(map[string]pkg.Component),
+				Aliases:      make(map[string]map[string]pkg.Component),
 			}
 			On(ctx)
 		},
@@ -52,4 +56,16 @@ type FnHttpClient struct {
 func (f *FnHttpClient) Do(req *http.Request) (*http.Response, error) {
 	k := req.Method + " " + req.URL.String()
 	return f.m[k](req)
+}
+
+type FnFS struct {
+	m map[string]func() ([]byte, error)
+}
+
+func (f FnFS) Open(name string) (fs.File, error) {
+	panic("implement me")
+}
+
+func (f FnFS) ReadFile(name string) ([]byte, error) {
+	return f.m[name]()
 }

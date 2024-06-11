@@ -2,19 +2,25 @@ package v3
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/cucumber/godog"
-	"github.com/raitonbl/coverup/pkg"
+	"github.com/thoas/go-funk"
+	"github.com/xeipuuv/gojsonschema"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 )
 
 const fileURISchema = "file://"
 const ComponentType = "HttpRequest"
 
+var pathRegexp, _ = regexp.Compile(`^\$((\.\w+)|(\[\d+\]))*$`)
+
 type HttpContext struct {
-	ctx ScenarioContext
+	schemas map[string]any
+	ctx     ScenarioContext
 }
 
 func (instance *HttpContext) WithRequest() error {
@@ -179,22 +185,8 @@ func (instance *HttpContext) WithBodyFileURI(value string) error {
 		if err != nil {
 			return nil, err
 		}
-		return instance.readURI(fmt.Sprintf("%s%v", fileURISchema, valueOf))
+		return instance.ctx.GetFS().ReadFile(valueOf.(string))
 	})
-}
-
-func (instance *HttpContext) readURI(uri string) ([]byte, error) {
-	var binary []byte
-	var err error
-	switch {
-	case strings.HasPrefix(uri, "http://"), strings.HasPrefix(uri, "https://"):
-		binary, err = pkg.ReadFromURL(instance.ctx.GetResourcesHttpClient(), uri)
-	case strings.HasPrefix(uri, fileURISchema):
-		binary, err = pkg.ReadFromFile(instance.ctx.GetWorkDirectory(), uri)
-	default:
-		return nil, fmt.Errorf("unsupported URI: %s", uri)
-	}
-	return binary, err
 }
 
 func (instance *HttpContext) WithAcceptHeader(value string) error {
@@ -231,7 +223,7 @@ func (instance *HttpContext) WithFormFile(name, value string) error {
 		if err != nil {
 			return nil, err
 		}
-		return instance.readURI(fmt.Sprintf("%s%v", fileURISchema, valueOf))
+		return instance.ctx.GetFS().ReadFile(valueOf.(string))
 	})
 }
 
@@ -277,7 +269,7 @@ func (instance *HttpContext) get(alias string) (*HttpRequest, error) {
 }
 
 func (instance *HttpContext) SubmitHttpRequest() error {
-	return instance.SubmitNamedHttpRequestOnBehalfOfEntity("", "")
+	return instance.SubmitHttpRequestOnBehalfOfEntity("")
 }
 
 func (instance *HttpContext) SubmitHttpRequestOnBehalfOfEntity(id string) error {
@@ -330,7 +322,7 @@ func (instance *HttpContext) doSubmitHttpRequest(src *HttpRequest) error {
 	}
 	headers := make(map[string]string)
 	for k, v := range res.Header {
-		req.Header.Set(k, strings.Join(v, ","))
+		headers[k] = strings.Join(v, ",")
 	}
 	src.response = &HttpResponse{
 		body:       binary,
@@ -403,50 +395,129 @@ func (instance *HttpContext) AssertNamedHttpRequestResponseHeader(alias string, 
 }
 
 func (instance *HttpContext) AssertResponseIsValidAgainstSchema(file string) error {
+	return instance.AssertNamedHttpRequestResponseIsValidAgainstSchema("", file)
+}
+
+func (instance *HttpContext) onNamedHttpRequestResponseWithJsonContentType(alias string, f func(*HttpRequest, *HttpResponse) error) error {
+	return instance.onNamedResponse(alias, func(req *HttpRequest, res *HttpResponse) error {
+		contentType, hasValue := res.headers["content-type"]
+		if !hasValue {
+			if alias == "" {
+				return fmt.Errorf(`%s.headers["content-type"] must be "application/json" or "aplication/problem+json"`, ComponentType)
+			}
+			return fmt.Errorf(`%s.%s.headers["content-type"] must be "application/json" or "aplication/problem+json"`, ComponentType, alias)
+		}
+		if contentType != "application/json" && contentType != "application/problem+json" {
+			if alias == "" {
+				return fmt.Errorf(`%s.headers["content-type"] must be "application/json" or "aplication/problem+json" but content-type is "%s"`, ComponentType, contentType)
+			}
+			return fmt.Errorf(`%s.%s.headers["content-type"] must be "application/json" or "aplication/problem+json" but content-type is "%s"`, ComponentType, alias, contentType)
+		}
+		return f(req, res)
+	})
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponseIsValidAgainstSchema(alias, value string) error {
+	return instance.onNamedHttpRequestResponseWithJsonContentType(alias, func(_ *HttpRequest, response *HttpResponse) error {
+		if instance.schemas == nil {
+			instance.schemas = make(map[string]any)
+		}
+		valueOf, hasValue := instance.schemas[value]
+		if !hasValue {
+			binary, err := instance.ctx.GetFS().ReadFile(value)
+			if err != nil {
+				return err
+			}
+			l := gojsonschema.NewBytesLoader(binary)
+			instance.schemas[value] = l
+			valueOf = l
+		}
+		schemaLoader := valueOf.(gojsonschema.JSONLoader)
+		documentLoader := gojsonschema.NewBytesLoader(response.body)
+		r, err := gojsonschema.Validate(schemaLoader, documentLoader)
+		if err != nil {
+			return err
+		}
+		if !r.Valid() {
+			return errors.New(
+				strings.Join(funk.Map(r.Errors(), func(desc gojsonschema.ResultError) string {
+					return fmt.Sprintf("- %s", desc)
+				}).([]string), "\n"),
+			)
+		}
+		return nil
+	})
+}
+
+func (instance *HttpContext) onNamedHttpRequestResponseBodyPath(t, alias string, f func(*HttpRequest, *HttpResponse, any) error) error {
+	return instance.onNamedHttpRequestResponseWithJsonContentType(alias, func(req *HttpRequest, res *HttpResponse) error {
+		expr := t
+		if strings.HasPrefix(expr, ".") {
+			expr = expr[1:]
+		}
+		if res.body == nil {
+			if alias == "" {
+				return fmt.Errorf(`cannot determine %s.body.$%s since body is undefined`, ComponentType, expr)
+			}
+			return fmt.Errorf(`cannot determine %s["%s"].body.$%s since body is undefined`, ComponentType, alias, expr)
+		}
+		valueOf, err := res.JSONPath(expr)
+		if err != nil {
+			if alias == "" {
+				return fmt.Errorf(`cannot determine %s.body.$%s due to error:\n%v`, ComponentType, expr, err)
+			}
+			return fmt.Errorf(`cannot determine %s["%s"].body.$%s due to error:\n%v`, ComponentType, alias, expr, err)
+		}
+		return f(req, res, valueOf)
+	})
+}
+
+func (instance *HttpContext) AssertResponseBodyPathEqualsTo(expr, compareTo string) error {
+	return instance.AssertNamedHttpRequestResponseBodyPathEqualsTo(expr, "", compareTo)
+}
+
+func (instance *HttpContext) AssertResponseBodyPathEqualsToValue(expr, compareTo string) error {
+	return instance.AssertNamedHttpRequestResponseBodyPathEqualsToValue(expr, "", compareTo)
+
+}
+
+func (instance *HttpContext) AssertResponseBodyPathEqualsToFloat64(expr string, compareTo float64) error {
+	return instance.AssertNamedHttpRequestResponseBodyPathEqualsToFloat64(expr, "", compareTo)
+}
+
+func (instance *HttpContext) AssertResponseBodyPathEqualsToBoolean(expr string, compareTo string) error {
+	return instance.AssertNamedHttpRequestResponseBodyPathEqualsToBoolean(expr, "", compareTo)
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponseBodyPathEqualsTo(expr, alias, compareTo string) error {
+	return instance.onNamedHttpRequestResponseBodyPath(expr, alias, func(_ *HttpRequest, response *HttpResponse, value any) error {
+		if value == compareTo {
+			return nil
+		}
+		if alias == "" {
+			return fmt.Errorf(`$%s=%v must be equal to %v`, expr, value, compareTo)
+		}
+		return fmt.Errorf(`%s.$%s=%v must be equal to %v`, alias, expr, value, compareTo)
+	})
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponseBodyPathEqualsToValue(expr, alias, compareTo string) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponseIsValidAgainstSchema(alias, file string) error {
+func (instance *HttpContext) AssertNamedHttpRequestResponseBodyPathEqualsToFloat64(expr, alias string, compareTo float64) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponseBodyPathEqualsTo(alias, value string) error {
+func (instance *HttpContext) AssertNamedHttpRequestResponseBodyPathEqualsToBoolean(expr, alias string, compareTo string) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponseBodyPathEqualsToValue(alias, value string) error {
+func (instance *HttpContext) AssertResponseBodyEqualsToFile(compareTo string) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponseBodyPathIsEqualToFloat64(p string, value float64) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertResponseBodyPathIsEqualToBoolean(alias string, value string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertNamedHttpRequestResponseBodyPathEqualsTo(alias, value string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertNamedHttpRequestResponseBodyPathEqualsToValue(alias, value string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertNamedHttpRequestResponseBodyPathIsEqualToFloat64(alias string, value float64) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertNamedHttpRequestResponseBodyPathIsEqualToBoolean(alias string, value string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertResponseBodyEqualsToFile(value string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertNamedHttpRequestResponseBodyEqualsToFile(alias string, value string) error {
+func (instance *HttpContext) AssertNamedHttpRequestResponseBodyEqualsToFile(alias string, compareTo string) error {
 	return nil
 }
 
@@ -458,27 +529,88 @@ func (instance *HttpContext) AssertNamedHttpRequestResponseBodyEqualsTo(alias st
 	return nil
 }
 
+func (instance *HttpContext) onNamedHttpRequestResponseBodyPathIsText(expr, alias string, f func(*HttpRequest, *HttpResponse, string) error) error {
+	return instance.onNamedHttpRequestResponseBodyPath(expr, alias, func(req *HttpRequest, res *HttpResponse, value any) error {
+		if value == nil {
+			if alias == "" {
+				return fmt.Errorf(`$%s mustn't be undefined`, expr)
+			}
+			return fmt.Errorf(`%s.$%s mustn't be undefined`, alias, expr)
+		}
+		if valueOf, isText := value.(string); !isText {
+			if alias == "" {
+				return fmt.Errorf(`$%s must be a string but got %v`, expr, value)
+			}
+			return fmt.Errorf(`%s.$%s must be a string but got %v`, alias, expr, value)
+		} else {
+			return f(req, res, valueOf)
+		}
+	})
+}
+
+func (instance *HttpContext) onNamedHttpRequestResponseBodyPathComparisonWhenIgnoreCaseIs(op, expr, alias, compareTo string, compareFn func(string, string) bool, ignoreCase bool) error {
+	return instance.onNamedHttpRequestResponseBodyPathIsText(expr, alias, func(request *HttpRequest, response *HttpResponse, s string) error {
+		valueFromResponse := s
+		valueToCompare := compareTo
+		if ignoreCase {
+			valueFromResponse = strings.ToUpper(valueFromResponse)
+			valueToCompare = strings.ToUpper(valueToCompare)
+		}
+		if compareFn(valueFromResponse, valueToCompare) {
+			return nil
+		}
+		if alias == "" {
+			return fmt.Errorf(`$%s=%s doesn't %s %v`, expr, s, op, compareTo)
+		}
+		return fmt.Errorf(`%s.$%s=%s doesn't %s %v`, alias, s, op, expr, compareTo)
+	})
+}
+
 func (instance *HttpContext) AssertResponsePathEndsWith(k string, value string) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponsePathContains(k string, value string) error {
-	return nil
+func (instance *HttpContext) AssertResponsePathContains(expr string, compareTo string) error {
+	return instance.AssertNamedHttpRequestResponsePathContains(expr, "", compareTo)
 }
 
-func (instance *HttpContext) AssertResponsePathStartsWith(k string, value string) error {
-	return nil
+func (instance *HttpContext) AssertWhileIgnoringCaseThatResponsePathContains(expr string, compareTo string) error {
+	return instance.AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathContains(expr, "", compareTo)
 }
 
-func (instance *HttpContext) AssertWhileIgnoringCaseThatResponsePathEndsWith(k string, value string) error {
-	return nil
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathContains(expr, alias, compareTo string) error {
+	return instance.assertNamedHttpRequestResponsePathContainsAndIgnoreCaseIs(expr, alias, compareTo, false)
 }
 
-func (instance *HttpContext) AssertWhileIgnoringCaseThatResponsePathContains(k string, value string) error {
-	return nil
+func (instance *HttpContext) AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathContains(expr, alias, compareTo string) error {
+	return instance.assertNamedHttpRequestResponsePathContainsAndIgnoreCaseIs(expr, alias, compareTo, true)
 }
 
-func (instance *HttpContext) AssertWhileIgnoringCaseThatResponsePathStartsWith(k string, value string) error {
+func (instance *HttpContext) assertNamedHttpRequestResponsePathContainsAndIgnoreCaseIs(expr, alias, compareTo string, ignoreCase bool) error {
+	return instance.onNamedHttpRequestResponseBodyPathComparisonWhenIgnoreCaseIs("contain", expr, alias, compareTo, strings.Contains, ignoreCase)
+}
+
+func (instance *HttpContext) AssertResponsePathStartsWith(expr string, compareTo string) error {
+	return instance.AssertNamedHttpRequestResponsePathStartsWith(expr, "", compareTo)
+}
+
+func (instance *HttpContext) AssertNamedHttpRequestResponsePathStartsWith(expr, alias, compareTo string) error {
+	return instance.assertNamedHttpRequestResponsePathStartsWithAndIgnoreCaseIs(expr, alias, compareTo, false)
+}
+
+func (instance *HttpContext) AssertWhileIgnoringCaseThatResponsePathStartsWith(expr string, compareTo string) error {
+	return instance.AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathStartsWith(expr, "", compareTo)
+}
+
+func (instance *HttpContext) AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathStartsWith(expr, alias, compareTo string) error {
+	return instance.assertNamedHttpRequestResponsePathStartsWithAndIgnoreCaseIs(expr, alias, compareTo, true)
+}
+
+func (instance *HttpContext) assertNamedHttpRequestResponsePathStartsWithAndIgnoreCaseIs(expr, alias, compareTo string, ignoreCase bool) error {
+	return instance.onNamedHttpRequestResponseBodyPathComparisonWhenIgnoreCaseIs("starts with", expr, alias, compareTo, strings.HasPrefix, ignoreCase)
+}
+
+func (instance *HttpContext) AssertWhileIgnoringCaseThatResponsePathEndsWith(k string, compareTo string) error {
 	return nil
 }
 
@@ -494,23 +626,7 @@ func (instance *HttpContext) AssertNamedHttpRequestResponsePathEndsWith(alias, k
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathContains(alias, k, value string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathStartsWith(alias, k, value string) error {
-	return nil
-}
-
 func (instance *HttpContext) AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathEndsWith(alias, k, value string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathContains(alias, k, value string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathStartsWith(alias, k, value string) error {
 	return nil
 }
 

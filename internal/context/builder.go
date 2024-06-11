@@ -111,7 +111,7 @@ func (instance *Builder) GetServerURL() string {
 }
 
 func (instance *Builder) GetWorkDirectory() string {
-	return instance.context.GetWorkDirectory()
+	return ""
 }
 
 func (instance *Builder) GetHttpClient() pkg.HttpClient {

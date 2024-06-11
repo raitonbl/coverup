@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/cucumber/godog"
 	"github.com/raitonbl/coverup/pkg"
+	"io/fs"
 	"regexp"
 	"strings"
 )
@@ -11,19 +12,15 @@ import (
 var valueRegexp = regexp.MustCompile(valueExpression)
 
 type DefaultScenarioContext struct {
-	WorkDirectory string
-	HttpClient    pkg.HttpClient
-	GoDogContext  *godog.ScenarioContext
-	References    map[string]pkg.Component
-	Aliases       map[string]map[string]pkg.Component
+	Filesystem   fs.ReadFileFS
+	HttpClient   pkg.HttpClient
+	GoDogContext *godog.ScenarioContext
+	References   map[string]pkg.Component
+	Aliases      map[string]map[string]pkg.Component
 }
 
 func (d *DefaultScenarioContext) GetServerURL() string {
 	panic("implement me")
-}
-
-func (d *DefaultScenarioContext) GetWorkDirectory() string {
-	return d.WorkDirectory
 }
 
 func (d *DefaultScenarioContext) GetHttpClient() pkg.HttpClient {
@@ -32,6 +29,10 @@ func (d *DefaultScenarioContext) GetHttpClient() pkg.HttpClient {
 
 func (d *DefaultScenarioContext) GetResourcesHttpClient() pkg.HttpClient {
 	return d.HttpClient
+}
+
+func (d *DefaultScenarioContext) GetFS() fs.ReadFileFS {
+	return d.Filesystem
 }
 
 func (d *DefaultScenarioContext) GetValue(src string) (any, error) {
