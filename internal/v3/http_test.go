@@ -144,6 +144,8 @@ func TestHttpContext_AssertSimpleAttribute(m *testing.T) {
 		`response body $.summary ignoring case contains "ssd"`,
 		`response body $.name starts with "Seagate"`,
 		`response body $.name ignoring case starts with "SeaGate"`,
+		`response body $.name ends with "MB/s"`,
+		`response body $.name ignoring case ends with "mb/s"`,
 	}
 	for _, assertion := range opts {
 		m.Run(assertion, func(t *testing.T) {
