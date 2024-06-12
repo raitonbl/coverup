@@ -152,6 +152,7 @@ func TestHttpContext_AssertSimpleAttribute(m *testing.T) {
 		`response body $.in_promotion isn't true`,
 		`response body $.name matches pattern "^Seagate"`,
 		`response body $.name doesn't match pattern "^X"`,
+		`response body respects schema file://schemas/product.json`,
 	}
 	for _, assertion := range opts {
 		m.Run(assertion, func(t *testing.T) {
@@ -229,6 +230,159 @@ func assertHttpGetProduct(t *testing.T, id string, def []byte, fm map[string]fun
 		for k, v := range fm {
 			m[k] = v
 		}
+	}
+	m["schemas/product.json"] = func() ([]byte, error) {
+		return []byte(`
+			{
+			  "$schema": "http://json-schema.org/draft-07/schema#",
+			  "type": "object",
+			  "properties": {
+				"id": {
+				  "type": "string"
+				},
+				"name": {
+				  "type": "string"
+				},
+				"summary": {
+				  "type": "string"
+				},
+				"image": {
+				  "type": "string"
+				},
+				"in_promotion": {
+				  "type": "boolean"
+				},
+				"offer_created_at": {
+				  "type": "string",
+				  "format": "date-time"
+				},
+				"offer_expires_at": {
+				  "type": "string",
+				  "format": "date-time"
+				},
+				"about": {
+				  "type": "array",
+				  "items": {
+					"type": "string"
+				  }
+				},
+				"tags": {
+				  "type": "array",
+				  "items": {
+					"type": "object",
+					"properties": {
+					  "id": {
+						"type": "string"
+					  },
+					  "name": {
+						"type": "string"
+					  }
+					},
+					"required": ["id", "name"]
+				  }
+				},
+				"warranty": {
+				  "type": "object",
+				  "properties": {
+					"amount": {
+					  "type": "integer"
+					},
+					"unit": {
+					  "type": "string"
+					}
+				  },
+				  "required": ["amount", "unit"]
+				},
+				"price": {
+				  "type": "object",
+				  "properties": {
+					"amount": {
+					  "type": "number"
+					},
+					"currency": {
+					  "type": "string"
+					}
+				  },
+				  "required": ["amount", "currency"]
+				},
+				"characteristics": {
+				  "type": "object",
+				  "properties": {
+					"capacity": {
+					  "type": "object",
+					  "properties": {
+						"amount": {
+						  "type": "integer"
+						},
+						"unit": {
+						  "type": "string"
+						}
+					  },
+					  "required": ["amount", "unit"]
+					},
+					"hard_disk_interface": {
+					  "type": "string"
+					},
+					"connectivity_technology": {
+					  "type": "string"
+					},
+					"brand": {
+					  "type": "string"
+					},
+					"special_feature": {
+					  "type": "string"
+					},
+					"hard_disk_form_factor": {
+					  "type": "object",
+					  "properties": {
+						"amount": {
+						  "type": "number"
+						},
+						"unit": {
+						  "type": "string"
+						}
+					  },
+					  "required": ["amount", "unit"]
+					},
+					"hard_disk_description": {
+					  "type": "string"
+					},
+					"color": {
+					  "type": "string"
+					},
+					"installation_type": {
+					  "type": "string"
+					}
+				  },
+				  "required": [
+					"capacity",
+					"hard_disk_interface",
+					"connectivity_technology",
+					"brand",
+					"special_feature",
+					"hard_disk_form_factor",
+					"hard_disk_description",
+					"color",
+					"installation_type"
+				  ]
+				}
+			  },
+			  "required": [
+				"id",
+				"name",
+				"summary",
+				"image",
+				"in_promotion",
+				"offer_created_at",
+				"offer_expires_at",
+				"about",
+				"tags",
+				"warranty",
+				"price",
+				"characteristics"
+			  ]
+			}
+`), nil
 	}
 	Exec(t, def, map[string]func(*http.Request) (*http.Response, error){
 		fmt.Sprintf("GET https://localhost:8443/items/%s", id): func(request *http.Request) (*http.Response, error) {
