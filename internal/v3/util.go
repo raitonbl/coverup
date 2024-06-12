@@ -78,15 +78,15 @@ func createResponseBodyPathEqualsTo(instance *HttpContext, opts HandlerOpts) any
 }
 
 func createResponseBodyPathContains(instance *HttpContext, opts HandlerOpts) any {
-	return createResponseBodyPathWhenStringOperation(instance, "contain", opts, strings.Contains)
+	return createResponseBodyPathThenExecuteStringOperation(instance, "contain", opts, strings.Contains)
 }
 
 func createResponseBodyPathStartsWith(instance *HttpContext, opts HandlerOpts) any {
-	return createResponseBodyPathWhenStringOperation(instance, "starts with", opts, strings.HasPrefix)
+	return createResponseBodyPathThenExecuteStringOperation(instance, "starts with", opts, strings.HasPrefix)
 }
 
 func createResponseBodyPathMatchesPattern(instance *HttpContext, opts HandlerOpts) any {
-	return createResponseBodyPathWhenStringOperation(instance, "matches pattern", opts, func(fromResponse string, value string) bool {
+	return createResponseBodyPathThenExecuteStringOperation(instance, "matches pattern", opts, func(fromResponse string, value string) bool {
 		r, err := regexp.Compile(value)
 		if err != nil {
 			//TODO LOG ERROR
@@ -97,10 +97,10 @@ func createResponseBodyPathMatchesPattern(instance *HttpContext, opts HandlerOpt
 }
 
 func createResponseBodyPathEndsWith(instance *HttpContext, opts HandlerOpts) any {
-	return createResponseBodyPathWhenStringOperation(instance, "ends with", opts, strings.HasSuffix)
+	return createResponseBodyPathThenExecuteStringOperation(instance, "ends with", opts, strings.HasSuffix)
 }
 
-func createResponseBodyPathWhenStringOperation(instance *HttpContext, ops string, opts HandlerOpts, predicate func(string, string) bool) any {
+func createResponseBodyPathThenExecuteStringOperation(instance *HttpContext, operation string, opts HandlerOpts, predicate func(string, string) bool) any {
 	f := func(expr, alias string, c string) error {
 		return instance.onNamedHttpRequestResponseBodyPath(expr, alias, func(_ *HttpRequest, response *HttpResponse, value any) error {
 			if value == nil {
@@ -145,9 +145,9 @@ func createResponseBodyPathWhenStringOperation(instance *HttpContext, ops string
 				condition += "n't"
 			}
 			if alias == "" {
-				return fmt.Errorf(`$%s=%v %s %s %v`, expr, value, condition, ops, compareTo)
+				return fmt.Errorf(`$%s=%v %s %s %v`, expr, value, condition, operation, compareTo)
 			}
-			return fmt.Errorf(`%s.$%s=%v %s %s %v`, alias, expr, condition, ops, value, compareTo)
+			return fmt.Errorf(`%s.$%s=%v %s %s %v`, alias, expr, condition, operation, value, compareTo)
 		})
 	}
 	if opts.isAliasAware {
