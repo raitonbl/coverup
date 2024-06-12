@@ -472,47 +472,6 @@ func (instance *HttpContext) onNamedHttpRequestResponseBodyPath(t, alias string,
 	})
 }
 
-func (instance *HttpContext) AssertResponseBodyPathEqualsTo(expr, compareTo string) error {
-	return instance.AssertNamedHttpRequestResponseBodyPathEqualsTo(expr, "", compareTo)
-}
-
-func (instance *HttpContext) AssertResponseBodyPathEqualsToValue(expr, compareTo string) error {
-	return instance.AssertNamedHttpRequestResponseBodyPathEqualsToValue(expr, "", compareTo)
-
-}
-
-func (instance *HttpContext) AssertResponseBodyPathEqualsToFloat64(expr string, compareTo float64) error {
-	return instance.AssertNamedHttpRequestResponseBodyPathEqualsToFloat64(expr, "", compareTo)
-}
-
-func (instance *HttpContext) AssertResponseBodyPathEqualsToBoolean(expr string, compareTo string) error {
-	return instance.AssertNamedHttpRequestResponseBodyPathEqualsToBoolean(expr, "", compareTo)
-}
-
-func (instance *HttpContext) AssertNamedHttpRequestResponseBodyPathEqualsTo(expr, alias, compareTo string) error {
-	return instance.onNamedHttpRequestResponseBodyPath(expr, alias, func(_ *HttpRequest, response *HttpResponse, value any) error {
-		if value == compareTo {
-			return nil
-		}
-		if alias == "" {
-			return fmt.Errorf(`$%s=%v must be equal to %v`, expr, value, compareTo)
-		}
-		return fmt.Errorf(`%s.$%s=%v must be equal to %v`, alias, expr, value, compareTo)
-	})
-}
-
-func (instance *HttpContext) AssertNamedHttpRequestResponseBodyPathEqualsToValue(expr, alias, compareTo string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertNamedHttpRequestResponseBodyPathEqualsToFloat64(expr, alias string, compareTo float64) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertNamedHttpRequestResponseBodyPathEqualsToBoolean(expr, alias string, compareTo string) error {
-	return nil
-}
-
 func (instance *HttpContext) AssertResponseBodyEqualsToFile(compareTo string) error {
 	return nil
 }
@@ -526,91 +485,6 @@ func (instance *HttpContext) AssertResponseBodyEqualsTo(value *godog.DocString) 
 }
 
 func (instance *HttpContext) AssertNamedHttpRequestResponseBodyEqualsTo(alias string, value *godog.DocString) error {
-	return nil
-}
-
-func (instance *HttpContext) onNamedHttpRequestResponseBodyPathIsText(expr, alias string, f func(*HttpRequest, *HttpResponse, string) error) error {
-	return instance.onNamedHttpRequestResponseBodyPath(expr, alias, func(req *HttpRequest, res *HttpResponse, value any) error {
-		if value == nil {
-			if alias == "" {
-				return fmt.Errorf(`$%s mustn't be undefined`, expr)
-			}
-			return fmt.Errorf(`%s.$%s mustn't be undefined`, alias, expr)
-		}
-		if valueOf, isText := value.(string); !isText {
-			if alias == "" {
-				return fmt.Errorf(`$%s must be a string but got %v`, expr, value)
-			}
-			return fmt.Errorf(`%s.$%s must be a string but got %v`, alias, expr, value)
-		} else {
-			return f(req, res, valueOf)
-		}
-	})
-}
-
-func (instance *HttpContext) onNamedHttpRequestResponseBodyPathComparisonWhenIgnoreCaseIs(op, expr, alias, compareTo string, compareFn func(string, string) bool, ignoreCase bool) error {
-	return instance.onNamedHttpRequestResponseBodyPathIsText(expr, alias, func(request *HttpRequest, response *HttpResponse, s string) error {
-		valueFromResponse := s
-		valueToCompare := compareTo
-		if ignoreCase {
-			valueFromResponse = strings.ToUpper(valueFromResponse)
-			valueToCompare = strings.ToUpper(valueToCompare)
-		}
-		if compareFn(valueFromResponse, valueToCompare) {
-			return nil
-		}
-		if alias == "" {
-			return fmt.Errorf(`$%s=%s doesn't %s %v`, expr, s, op, compareTo)
-		}
-		return fmt.Errorf(`%s.$%s=%s doesn't %s %v`, alias, s, op, expr, compareTo)
-	})
-}
-
-func (instance *HttpContext) AssertResponsePathEndsWith(k string, value string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertResponsePathContains(expr string, compareTo string) error {
-	return instance.AssertNamedHttpRequestResponsePathContains(expr, "", compareTo)
-}
-
-func (instance *HttpContext) AssertWhileIgnoringCaseThatResponsePathContains(expr string, compareTo string) error {
-	return instance.AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathContains(expr, "", compareTo)
-}
-
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathContains(expr, alias, compareTo string) error {
-	return instance.assertNamedHttpRequestResponsePathContainsAndIgnoreCaseIs(expr, alias, compareTo, false)
-}
-
-func (instance *HttpContext) AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathContains(expr, alias, compareTo string) error {
-	return instance.assertNamedHttpRequestResponsePathContainsAndIgnoreCaseIs(expr, alias, compareTo, true)
-}
-
-func (instance *HttpContext) assertNamedHttpRequestResponsePathContainsAndIgnoreCaseIs(expr, alias, compareTo string, ignoreCase bool) error {
-	return instance.onNamedHttpRequestResponseBodyPathComparisonWhenIgnoreCaseIs("contain", expr, alias, compareTo, strings.Contains, ignoreCase)
-}
-
-func (instance *HttpContext) AssertResponsePathStartsWith(expr string, compareTo string) error {
-	return instance.AssertNamedHttpRequestResponsePathStartsWith(expr, "", compareTo)
-}
-
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathStartsWith(expr, alias, compareTo string) error {
-	return instance.assertNamedHttpRequestResponsePathStartsWithAndIgnoreCaseIs(expr, alias, compareTo, false)
-}
-
-func (instance *HttpContext) AssertWhileIgnoringCaseThatResponsePathStartsWith(expr string, compareTo string) error {
-	return instance.AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathStartsWith(expr, "", compareTo)
-}
-
-func (instance *HttpContext) AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathStartsWith(expr, alias, compareTo string) error {
-	return instance.assertNamedHttpRequestResponsePathStartsWithAndIgnoreCaseIs(expr, alias, compareTo, true)
-}
-
-func (instance *HttpContext) assertNamedHttpRequestResponsePathStartsWithAndIgnoreCaseIs(expr, alias, compareTo string, ignoreCase bool) error {
-	return instance.onNamedHttpRequestResponseBodyPathComparisonWhenIgnoreCaseIs("starts with", expr, alias, compareTo, strings.HasPrefix, ignoreCase)
-}
-
-func (instance *HttpContext) AssertWhileIgnoringCaseThatResponsePathEndsWith(k string, compareTo string) error {
 	return nil
 }
 

@@ -122,15 +122,18 @@ func onResponseBodyPathCompareTo(h *HttpContext) {
 			assertResponseBodyPath(h, verb+` `+pattern, f(h, Opts{isAffirmation: isTrue, isAliasAware: false}), f(h, Opts{isAffirmation: isTrue, isAliasAware: true}))
 		}
 	}
+
 	vars = map[string]HandlerFactory{
-		"contains":    createResponseBodyPathContains,
-		"ends with":   createResponseBodyPathEndsWith,
-		"starts with": createResponseBodyPathStartsWith,
+		"contains":        createResponseBodyPathContains,
+		"ends with":       createResponseBodyPathEndsWith,
+		"starts with":     createResponseBodyPathStartsWith,
+		"matches pattern": createResponseBodyPathMatchesPattern,
 	}
 	n := map[string]string{
-		"contains":    "contain",
-		"ends with":   "end with",
-		"starts with": "start with",
+		"contains":        "contain",
+		"ends with":       "end with",
+		"starts with":     "start with",
+		"matches pattern": "match pattern",
 	}
 	valueOpts := []string{`"([^"]*)"$`, valueRegex}
 	verbs = []string{"", "doesn't"}
@@ -140,14 +143,14 @@ func onResponseBodyPathCompareTo(h *HttpContext) {
 				for _, verb := range verbs {
 					pattern := ""
 					if i == 1 {
-						pattern = "ignoring case"
+						pattern = "ignoring case "
 					}
 					if verb == verbs[1] {
-						pattern += " " + verb + " " + n[k]
+						pattern += verb + " " + n[k]
 					} else if pattern == "" {
 						pattern = k
 					} else {
-						pattern += " " + k
+						pattern += k
 					}
 					isTrue := verb == verbs[0]
 					assertResponseBodyPath(h, pattern+` `+opt, f(h, Opts{isAffirmation: isTrue, isAliasAware: false, ignoreCase: i == 1, interpolateValue: true}),
@@ -156,6 +159,7 @@ func onResponseBodyPathCompareTo(h *HttpContext) {
 			}
 		}
 	}
+
 }
 
 func onResponseBody(h *HttpContext) {
@@ -163,7 +167,6 @@ func onResponseBody(h *HttpContext) {
 	assertResponseBody(h, `is file://(.+)$`, h.AssertResponseBodyEqualsToFile, h.AssertNamedHttpRequestResponseBodyEqualsToFile)
 	onResponseBodyPathCompareTo(h)
 	patterns := map[string][]any{}
-	assertResponseBodyPath(h, `matches pattern "([^"]*)"$`, h.AssertResponsePathMatchesPattern, h.AssertNamedHttpRequestResponsePathMatchesPattern)
 	patterns = map[string][]any{
 		"Time":     {h.AssertResponsePathIsTime, h.AssertNamedHttpRequestResponsePathIsTime},
 		"Date":     {h.AssertResponsePathIsDate, h.AssertNamedHttpRequestResponsePathIsDate},

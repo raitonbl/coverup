@@ -2,6 +2,7 @@ package v3
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -82,6 +83,17 @@ func createResponseBodyPathContains(instance *HttpContext, opts Opts) any {
 
 func createResponseBodyPathStartsWith(instance *HttpContext, opts Opts) any {
 	return createResponseBodyPathWhenStringOperation(instance, "starts with", opts, strings.HasPrefix)
+}
+
+func createResponseBodyPathMatchesPattern(instance *HttpContext, opts Opts) any {
+	return createResponseBodyPathWhenStringOperation(instance, "matches pattern", opts, func(fromResponse string, value string) bool {
+		r, err := regexp.Compile(value)
+		if err != nil {
+			//TODO LOG ERROR
+			return false
+		}
+		return r.Match([]byte(fromResponse))
+	})
 }
 
 func createResponseBodyPathEndsWith(instance *HttpContext, opts Opts) any {

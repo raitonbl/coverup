@@ -146,6 +146,12 @@ func TestHttpContext_AssertSimpleAttribute(m *testing.T) {
 		`response body $.name ignoring case starts with "SeaGate"`,
 		`response body $.name ends with "MB/s"`,
 		`response body $.name ignoring case ends with "mb/s"`,
+		`response body $.warranty.amount is 2`,
+		`response body $.warranty.amount isn't 3`,
+		`response body $.in_promotion is false`,
+		`response body $.in_promotion isn't true`,
+		`response body $.name matches pattern "^Seagate"`,
+		`response body $.name doesn't match pattern "^X"`,
 	}
 	for _, assertion := range opts {
 		m.Run(assertion, func(t *testing.T) {
