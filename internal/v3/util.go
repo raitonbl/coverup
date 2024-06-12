@@ -6,16 +6,16 @@ import (
 	"strings"
 )
 
-type Opts struct {
+type HandlerOpts struct {
 	isAffirmation    bool
 	isAliasAware     bool
 	ignoreCase       bool
 	interpolateValue bool
 }
 
-type HandlerFactory func(instance *HttpContext, opts Opts) any
+type HandlerFactory func(instance *HttpContext, opts HandlerOpts) any
 
-func createResponseBodyPathEqualTo(instance *HttpContext, opts Opts) any {
+func createResponseBodyPathEqualTo(instance *HttpContext, opts HandlerOpts) any {
 	f := createResponseBodyPathEqualsTo(instance, opts)
 	if opts.isAliasAware {
 		return func(expr, alias, compareTo string) error {
@@ -27,7 +27,7 @@ func createResponseBodyPathEqualTo(instance *HttpContext, opts Opts) any {
 	}
 }
 
-func createResponseBodyPathEqualToFloat64(instance *HttpContext, opts Opts) any {
+func createResponseBodyPathEqualToFloat64(instance *HttpContext, opts HandlerOpts) any {
 	f := createResponseBodyPathEqualsTo(instance, opts)
 	if opts.isAliasAware {
 		return func(expr, alias string, compareTo float64) error {
@@ -39,7 +39,7 @@ func createResponseBodyPathEqualToFloat64(instance *HttpContext, opts Opts) any 
 	}
 }
 
-func createResponseBodyPathEqualToBoolean(instance *HttpContext, opts Opts) any {
+func createResponseBodyPathEqualToBoolean(instance *HttpContext, opts HandlerOpts) any {
 	f := createResponseBodyPathEqualsTo(instance, opts)
 	if opts.isAliasAware {
 		return func(expr, alias string, compareTo string) error {
@@ -53,7 +53,7 @@ func createResponseBodyPathEqualToBoolean(instance *HttpContext, opts Opts) any 
 	}
 }
 
-func createResponseBodyPathEqualsTo(instance *HttpContext, opts Opts) any {
+func createResponseBodyPathEqualsTo(instance *HttpContext, opts HandlerOpts) any {
 	f := func(expr, alias string, compareTo any) error {
 		return instance.onNamedHttpRequestResponseBodyPath(expr, alias, func(_ *HttpRequest, response *HttpResponse, value any) error {
 			if (value == compareTo) == opts.isAffirmation {
@@ -77,15 +77,15 @@ func createResponseBodyPathEqualsTo(instance *HttpContext, opts Opts) any {
 	}
 }
 
-func createResponseBodyPathContains(instance *HttpContext, opts Opts) any {
+func createResponseBodyPathContains(instance *HttpContext, opts HandlerOpts) any {
 	return createResponseBodyPathWhenStringOperation(instance, "contain", opts, strings.Contains)
 }
 
-func createResponseBodyPathStartsWith(instance *HttpContext, opts Opts) any {
+func createResponseBodyPathStartsWith(instance *HttpContext, opts HandlerOpts) any {
 	return createResponseBodyPathWhenStringOperation(instance, "starts with", opts, strings.HasPrefix)
 }
 
-func createResponseBodyPathMatchesPattern(instance *HttpContext, opts Opts) any {
+func createResponseBodyPathMatchesPattern(instance *HttpContext, opts HandlerOpts) any {
 	return createResponseBodyPathWhenStringOperation(instance, "matches pattern", opts, func(fromResponse string, value string) bool {
 		r, err := regexp.Compile(value)
 		if err != nil {
@@ -96,11 +96,11 @@ func createResponseBodyPathMatchesPattern(instance *HttpContext, opts Opts) any 
 	})
 }
 
-func createResponseBodyPathEndsWith(instance *HttpContext, opts Opts) any {
+func createResponseBodyPathEndsWith(instance *HttpContext, opts HandlerOpts) any {
 	return createResponseBodyPathWhenStringOperation(instance, "ends with", opts, strings.HasSuffix)
 }
 
-func createResponseBodyPathWhenStringOperation(instance *HttpContext, ops string, opts Opts, predicate func(string, string) bool) any {
+func createResponseBodyPathWhenStringOperation(instance *HttpContext, ops string, opts HandlerOpts, predicate func(string, string) bool) any {
 	f := func(expr, alias string, c string) error {
 		return instance.onNamedHttpRequestResponseBodyPath(expr, alias, func(_ *HttpRequest, response *HttpResponse, value any) error {
 			if value == nil {
