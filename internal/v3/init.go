@@ -158,10 +158,10 @@ func onResponseBodySchemaValidation(h *HttpContext) {
 
 func onResponseBodyPathCompareTo(h *HttpContext) {
 	doOnResponseBodyPathCompareTo(h, []string{"is", "isn't"}, map[string]HandlerFactory{
-		`"([^"]*)"`:       createResponseBodyPathEqualTo,
-		valueRegex:        createResponseBodyPathEqualTo,
-		`(-?\d+(\.\d+)?)`: createResponseBodyPathEqualToFloat64,
-		`(true|false)`:    createResponseBodyPathEqualToBoolean,
+		`"([^"]*)"`:       newJsonPathEqualsTo,
+		valueRegex:        newJsonPathEqualsTo,
+		`(-?\d+(\.\d+)?)`: newJsonPathEqualsToFloat64,
+		`(true|false)`:    newJsonPathEqualsToBooleanHandler,
 	}, []HandlerOpts{
 		{isAffirmation: true, isAliasAware: false},
 		{isAffirmation: true, isAliasAware: true},
@@ -173,10 +173,10 @@ func onResponseBodyPathCompareTo(h *HttpContext) {
 
 func doOnResponseBodyPathAndExecStringOperation(h *HttpContext, verbs []string) {
 	patterns := map[string]HandlerFactory{
-		"contains":        createResponseBodyPathContains,
-		"ends with":       createResponseBodyPathEndsWith,
-		"starts with":     createResponseBodyPathStartsWith,
-		"matches pattern": createResponseBodyPathMatchesPattern,
+		"contains":        newJsonPathContainsHandler,
+		"ends with":       newJsonPathEndsWithHandler,
+		"starts with":     newJsonPathStartsWithHandler,
+		"matches pattern": newJsonPathPatternHandler,
 	}
 	negations := map[string]string{
 		"contains":        "contain",

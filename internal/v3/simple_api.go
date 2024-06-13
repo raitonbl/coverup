@@ -15,8 +15,8 @@ type HandlerOpts struct {
 
 type HandlerFactory func(instance *HttpContext, opts HandlerOpts) any
 
-func createResponseBodyPathEqualTo(instance *HttpContext, opts HandlerOpts) any {
-	f := createResponseBodyPathEqualsTo(instance, opts)
+func newJsonPathEqualsTo(instance *HttpContext, opts HandlerOpts) any {
+	f := newJsonPathEqualsToAnyHandler(instance, opts)
 	if opts.isAliasAware {
 		return func(expr, alias, compareTo string) error {
 			return f.(func(string, string, any) error)(expr, alias, compareTo)
@@ -27,8 +27,8 @@ func createResponseBodyPathEqualTo(instance *HttpContext, opts HandlerOpts) any 
 	}
 }
 
-func createResponseBodyPathEqualToFloat64(instance *HttpContext, opts HandlerOpts) any {
-	f := createResponseBodyPathEqualsTo(instance, opts)
+func newJsonPathEqualsToFloat64(instance *HttpContext, opts HandlerOpts) any {
+	f := newJsonPathEqualsToAnyHandler(instance, opts)
 	if opts.isAliasAware {
 		return func(expr, alias string, compareTo float64) error {
 			return f.(func(string, string, any) error)(expr, alias, compareTo)
@@ -39,8 +39,8 @@ func createResponseBodyPathEqualToFloat64(instance *HttpContext, opts HandlerOpt
 	}
 }
 
-func createResponseBodyPathEqualToBoolean(instance *HttpContext, opts HandlerOpts) any {
-	f := createResponseBodyPathEqualsTo(instance, opts)
+func newJsonPathEqualsToBooleanHandler(instance *HttpContext, opts HandlerOpts) any {
+	f := newJsonPathEqualsToAnyHandler(instance, opts)
 	if opts.isAliasAware {
 		return func(expr, alias string, compareTo string) error {
 			valueOf := compareTo == "true"
@@ -53,7 +53,7 @@ func createResponseBodyPathEqualToBoolean(instance *HttpContext, opts HandlerOpt
 	}
 }
 
-func createResponseBodyPathEqualsTo(instance *HttpContext, opts HandlerOpts) any {
+func newJsonPathEqualsToAnyHandler(instance *HttpContext, opts HandlerOpts) any {
 	f := func(expr, alias string, compareTo any) error {
 		return instance.onNamedHttpRequestResponseBodyPath(expr, alias, func(_ *HttpRequest, response *HttpResponse, value any) error {
 			if (value == compareTo) == opts.isAffirmation {
@@ -77,16 +77,16 @@ func createResponseBodyPathEqualsTo(instance *HttpContext, opts HandlerOpts) any
 	}
 }
 
-func createResponseBodyPathContains(instance *HttpContext, opts HandlerOpts) any {
-	return createResponseBodyPathThenExecuteStringOperation(instance, "contain", opts, strings.Contains)
+func newJsonPathContainsHandler(instance *HttpContext, opts HandlerOpts) any {
+	return newStringOperationJsonPathHandler(instance, "contain", opts, strings.Contains)
 }
 
-func createResponseBodyPathStartsWith(instance *HttpContext, opts HandlerOpts) any {
-	return createResponseBodyPathThenExecuteStringOperation(instance, "starts with", opts, strings.HasPrefix)
+func newJsonPathStartsWithHandler(instance *HttpContext, opts HandlerOpts) any {
+	return newStringOperationJsonPathHandler(instance, "starts with", opts, strings.HasPrefix)
 }
 
-func createResponseBodyPathMatchesPattern(instance *HttpContext, opts HandlerOpts) any {
-	return createResponseBodyPathThenExecuteStringOperation(instance, "matches pattern", opts, func(fromResponse string, value string) bool {
+func newJsonPathPatternHandler(instance *HttpContext, opts HandlerOpts) any {
+	return newStringOperationJsonPathHandler(instance, "matches pattern", opts, func(fromResponse string, value string) bool {
 		r, err := regexp.Compile(value)
 		if err != nil {
 			//TODO LOG ERROR
@@ -96,13 +96,13 @@ func createResponseBodyPathMatchesPattern(instance *HttpContext, opts HandlerOpt
 	})
 }
 
-func createResponseBodyPathEndsWith(instance *HttpContext, opts HandlerOpts) any {
-	return createResponseBodyPathThenExecuteStringOperation(instance, "ends with", opts, strings.HasSuffix)
+func newJsonPathEndsWithHandler(instance *HttpContext, opts HandlerOpts) any {
+	return newStringOperationJsonPathHandler(instance, "ends with", opts, strings.HasSuffix)
 }
 
-func createResponseBodyPathThenExecuteStringOperation(instance *HttpContext, operation string, opts HandlerOpts, predicate func(string, string) bool) any {
+func newStringOperationJsonPathHandler(instance *HttpContext, operation string, opts HandlerOpts, predicate func(string, string) bool) any {
 	f := func(expr, alias string, c string) error {
-		return instance.onNamedHttpRequestResponseBodyPath(expr, alias, func(_ *HttpRequest, response *HttpResponse, value any) error {
+		return onJsonPathDo(instance, alias, expr, func(_ *HttpRequest, res *HttpResponse, value any) error {
 			if value == nil {
 				if alias == "" {
 					return fmt.Errorf(`$%s mustn't be undefined`, expr)
