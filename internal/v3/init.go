@@ -171,9 +171,6 @@ func onResponseBodySchemaValidation(h *HttpContext) {
 				HandlerOpts{isAffirmationExpected: isAffirmation, isAliasedFunction: true, scheme: scheme})
 		}
 	}
-	//	setRequestBodyStepDefinition(h, `respects schema file://(.+)$`, h.AssertResponseIsValidAgainstSchema, h.AssertNamedHttpRequestResponseIsValidAgainstSchema)
-	//	setRequestBodyStepDefinition(h, `respects schema http://(.+)$`, h.AssertResponseIsValidAgainstSchema, h.AssertNamedHttpRequestResponseIsValidAgainstSchema)
-	//	setRequestBodyStepDefinition(h, `respects schema https://(.+)$`, h.AssertResponseIsValidAgainstSchema, h.AssertNamedHttpRequestResponseIsValidAgainstSchema)
 }
 
 func onJsonPathCompareTo(h *HttpContext) {
