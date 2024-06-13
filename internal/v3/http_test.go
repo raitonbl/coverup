@@ -153,6 +153,8 @@ func TestHttpContext_AssertSimpleAttribute(m *testing.T) {
 		`response body $.name matches pattern "^Seagate"`,
 		`response body $.name doesn't match pattern "^X"`,
 		`response body respects schema file://schemas/product.json`,
+		`response body respects schema http://localhost:8080/schemas/product.json`,
+		`response body respects schema https://localhost:8443/schemas/product.json`,
 	}
 	for _, assertion := range opts {
 		m.Run(assertion, func(t *testing.T) {
@@ -382,7 +384,22 @@ func assertHttpGetProduct(t *testing.T, id string, def []byte, fm map[string]fun
 				"characteristics"
 			  ]
 			}
-`), nil
+		`), nil
+	}
+	fetchSchemaFromServer := func(request *http.Request) (*http.Response, error) {
+		f := m["schemas/product.json"]
+		binary, err := f()
+		if err != nil {
+			return nil, err
+		}
+		return &http.Response{
+			StatusCode: 200,
+			Status:     http.StatusText(200),
+			Header: map[string][]string{
+				"content-type": {"application/json"},
+			},
+			Body: io.NopCloser(bytes.NewBuffer(binary)),
+		}, nil
 	}
 	Exec(t, def, map[string]func(*http.Request) (*http.Response, error){
 		fmt.Sprintf("GET https://localhost:8443/items/%s", id): func(request *http.Request) (*http.Response, error) {
@@ -395,5 +412,7 @@ func assertHttpGetProduct(t *testing.T, id string, def []byte, fm map[string]fun
 				Body: io.NopCloser(bytes.NewBuffer(r)),
 			}, nil
 		},
+		"GET http://localhost:8080/schemas/product.json":  fetchSchemaFromServer,
+		"GET https://localhost:8443/schemas/product.json": fetchSchemaFromServer,
 	}, m)
 }

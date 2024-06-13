@@ -7,17 +7,18 @@ import (
 )
 
 type HandlerOpts struct {
-	isAffirmation    bool
-	isAliasAware     bool
-	ignoreCase       bool
-	interpolateValue bool
+	isAffirmationExpected  bool
+	isAliasedFunction      bool
+	ignoreCaseIfApplicable bool
+	attemptValueResolution bool
+	scheme                 URIScheme
 }
 
 type HandlerFactory func(instance *HttpContext, opts HandlerOpts) any
 
 func newJsonPathEqualsTo(instance *HttpContext, opts HandlerOpts) any {
 	f := newJsonPathEqualsToAnyHandler(instance, opts)
-	if opts.isAliasAware {
+	if opts.isAliasedFunction {
 		return func(expr, alias, compareTo string) error {
 			return f.(func(string, string, any) error)(expr, alias, compareTo)
 		}
@@ -29,7 +30,7 @@ func newJsonPathEqualsTo(instance *HttpContext, opts HandlerOpts) any {
 
 func newJsonPathEqualsToFloat64(instance *HttpContext, opts HandlerOpts) any {
 	f := newJsonPathEqualsToAnyHandler(instance, opts)
-	if opts.isAliasAware {
+	if opts.isAliasedFunction {
 		return func(expr, alias string, compareTo float64) error {
 			return f.(func(string, string, any) error)(expr, alias, compareTo)
 		}
@@ -41,7 +42,7 @@ func newJsonPathEqualsToFloat64(instance *HttpContext, opts HandlerOpts) any {
 
 func newJsonPathEqualsToBooleanHandler(instance *HttpContext, opts HandlerOpts) any {
 	f := newJsonPathEqualsToAnyHandler(instance, opts)
-	if opts.isAliasAware {
+	if opts.isAliasedFunction {
 		return func(expr, alias string, compareTo string) error {
 			valueOf := compareTo == "true"
 			return f.(func(string, string, any) error)(expr, alias, valueOf)
@@ -56,11 +57,11 @@ func newJsonPathEqualsToBooleanHandler(instance *HttpContext, opts HandlerOpts) 
 func newJsonPathEqualsToAnyHandler(instance *HttpContext, opts HandlerOpts) any {
 	f := func(expr, alias string, compareTo any) error {
 		return instance.onNamedHttpRequestResponseBodyPath(expr, alias, func(_ *HttpRequest, response *HttpResponse, value any) error {
-			if (value == compareTo) == opts.isAffirmation {
+			if (value == compareTo) == opts.isAffirmationExpected {
 				return nil
 			}
 			condition := "must"
-			if !opts.isAffirmation {
+			if !opts.isAffirmationExpected {
 				condition += "n't"
 			}
 			if alias == "" {
@@ -69,7 +70,7 @@ func newJsonPathEqualsToAnyHandler(instance *HttpContext, opts HandlerOpts) any 
 			return fmt.Errorf(`%s.$%s=%v %s be equal to %v`, alias, expr, condition, value, compareTo)
 		})
 	}
-	if opts.isAliasAware {
+	if opts.isAliasedFunction {
 		return f
 	}
 	return func(expr string, compareTo any) error {
@@ -117,7 +118,7 @@ func newStringOperationJsonPathHandler(instance *HttpContext, operation string, 
 				return fmt.Errorf(`%s.$%s must be a string but got %v`, alias, expr, value)
 			}
 			compareTo := c
-			if opts.interpolateValue {
+			if opts.attemptValueResolution {
 				v, err := instance.ctx.GetValue(c)
 				if err != nil {
 					return err
@@ -132,16 +133,16 @@ func newStringOperationJsonPathHandler(instance *HttpContext, operation string, 
 			}
 			v1 := valueOf
 			v2 := compareTo
-			if opts.ignoreCase {
+			if opts.ignoreCaseIfApplicable {
 				v1 = strings.ToUpper(v1)
 				v2 = strings.ToUpper(v2)
 			}
 			r := predicate(v1, v2)
-			if r == opts.isAffirmation {
+			if r == opts.isAffirmationExpected {
 				return nil
 			}
 			condition := "must"
-			if !opts.isAffirmation {
+			if !opts.isAffirmationExpected {
 				condition += "n't"
 			}
 			if alias == "" {
@@ -150,7 +151,7 @@ func newStringOperationJsonPathHandler(instance *HttpContext, operation string, 
 			return fmt.Errorf(`%s.$%s=%v %s %s %v`, alias, expr, condition, operation, value, compareTo)
 		})
 	}
-	if opts.isAliasAware {
+	if opts.isAliasedFunction {
 		return f
 	}
 	return func(expr string, compareTo string) error {

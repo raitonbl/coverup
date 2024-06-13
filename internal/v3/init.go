@@ -109,9 +109,9 @@ func onResponseHeaders(h *HttpContext) {
 }
 
 func onResponseBody(h *HttpContext) {
-	assertResponseBody(h, `is:$`, h.AssertResponseBodyEqualsToFile, h.AssertNamedHttpRequestResponseBodyEqualsToFile)
-	assertResponseBody(h, `is file://(.+)$`, h.AssertResponseBodyEqualsToFile, h.AssertNamedHttpRequestResponseBodyEqualsToFile)
-	onResponseBodyPathCompareTo(h)
+	setRequestBodyStepDefinition(h, `is:$`, h.AssertResponseBodyEqualsToFile, h.AssertNamedHttpRequestResponseBodyEqualsToFile)
+	setRequestBodyStepDefinition(h, `is file://(.+)$`, h.AssertResponseBodyEqualsToFile, h.AssertNamedHttpRequestResponseBodyEqualsToFile)
+	onJsonPathCompareTo(h)
 	patterns := map[string][]any{}
 	patterns = map[string][]any{
 		"Time":     {h.AssertResponsePathIsTime, h.AssertNamedHttpRequestResponsePathIsTime},
@@ -119,7 +119,7 @@ func onResponseBody(h *HttpContext) {
 		"DateTime": {h.AssertResponsePathIsDateTime, h.AssertNamedHttpRequestResponsePathIsDateTime},
 	}
 	for expr, arr := range patterns {
-		assertResponseBodyPath(h, fmt.Sprintf(`is %s`, expr), arr[0], arr[1])
+		setJsonPathStepDefinition(h, fmt.Sprintf(`is %s`, expr), arr[0], arr[1])
 	}
 	patterns = map[string][]any{
 		"is same":            {h.AssertResponsePathIsSame, h.AssertNamedHttpRequestResponsePathIsSame},
@@ -129,10 +129,10 @@ func onResponseBody(h *HttpContext) {
 		"is before or after": {h.AssertResponsePathIsSameOrBefore, h.AssertNamedHttpRequestResponsePathIsSameOrBefore},
 	}
 	for expr, arr := range patterns {
-		assertResponseBodyPath(h, fmt.Sprintf(`%s "([^"]*)"$`, expr), arr[0], arr[1])
-		assertResponseBodyPath(h, fmt.Sprintf(`%s %s$`, expr, valueRegex), arr[0], arr[1])
+		setJsonPathStepDefinition(h, fmt.Sprintf(`%s "([^"]*)"$`, expr), arr[0], arr[1])
+		setJsonPathStepDefinition(h, fmt.Sprintf(`%s %s$`, expr, valueRegex), arr[0], arr[1])
 	}
-	assertResponseBodyPath(h, `length is (\d+)`, h.AssertResponsePathLengthIs, h.AssertNamedHttpRequestResponsePathLengthIs)
+	setJsonPathStepDefinition(h, `length is (\d+)`, h.AssertResponsePathLengthIs, h.AssertNamedHttpRequestResponsePathLengthIs)
 	patterns = map[string][]any{
 		"lesser":              {h.AssertResponsePathIsLesserThan, h.AssertResponsePathIsLesserThanValue, h.AssertNamedHttpRequestResponsePathIsLesserThan, h.AssertNamedHttpRequestResponsePathIsLesserThanValue},
 		"greater than":        {h.AssertResponsePathIsGreaterThan, h.AssertResponsePathIsGreaterThanValue, h.AssertNamedHttpRequestResponsePathIsGreaterThan, h.AssertNamedHttpRequestResponsePathIsGreaterThanValue},
@@ -140,38 +140,58 @@ func onResponseBody(h *HttpContext) {
 		"greater or equal to": {h.AssertResponsePathIsGreaterThanOrEqualTo, h.AssertResponsePathIsGreaterThanOrEqualToValue, h.AssertNamedHttpRequestResponsePathIsGreaterThanOrEqualTo, h.AssertNamedHttpRequestResponsePathIsGreaterThanOrEqualToValue},
 	}
 	for k, opts := range patterns {
-		assertResponseBodyPath(h, fmt.Sprintf(`is %s (-?\d+(\.\d+)?)$`, k), opts[0], opts[2])
-		assertResponseBodyPath(h, fmt.Sprintf(`is %s %s$`, k, valueRegex), opts[1], opts[3])
+		setJsonPathStepDefinition(h, fmt.Sprintf(`is %s (-?\d+(\.\d+)?)$`, k), opts[0], opts[2])
+		setJsonPathStepDefinition(h, fmt.Sprintf(`is %s %s$`, k, valueRegex), opts[1], opts[3])
 	}
 	patterns = map[string][]any{
 		`(\["[^"]*"(?:,"[^"]*")*\])`: {h.AssertResponsePathIsInStringArray, h.AssertNamedHttpRequestResponsePathIsInStringArray},
 		`(\["\d+"(?:,"\d+")*\])`:     {h.AssertResponsePathIsInNumericArray, h.AssertNamedHttpRequestResponsePathIsInNumericArray},
 	}
 	for expr, arr := range patterns {
-		assertResponseBodyPath(h, fmt.Sprintf(`is part of %s`, expr), arr[0], arr[1])
+		setJsonPathStepDefinition(h, fmt.Sprintf(`is part of %s`, expr), arr[0], arr[1])
 	}
 }
 
 func onResponseBodySchemaValidation(h *HttpContext) {
-	assertResponseBody(h, `respects schema file://(.+)$`, h.AssertResponseIsValidAgainstSchema, h.AssertNamedHttpRequestResponseIsValidAgainstSchema)
+	schemes := []URIScheme{
+		fileUriScheme,
+		httpUriScheme,
+		httpsUriScheme,
+	}
+	verbs := []string{"", "doesn't"}
+	for _, scheme := range schemes {
+		for _, verb := range verbs {
+			prefix := verb
+			isAffirmation := verb == verbs[0]
+			if verb == verbs[1] {
+				prefix += " "
+			}
+			setRequestBodyStepDefinition(h, fmt.Sprintf(`%srespects schema %s://(.+)$`, prefix, scheme),
+				newJsonSchemaValidator(h, HandlerOpts{isAffirmationExpected: isAffirmation, isAliasedFunction: false, scheme: scheme}),
+				HandlerOpts{isAffirmationExpected: isAffirmation, isAliasedFunction: true, scheme: scheme})
+		}
+	}
+	//	setRequestBodyStepDefinition(h, `respects schema file://(.+)$`, h.AssertResponseIsValidAgainstSchema, h.AssertNamedHttpRequestResponseIsValidAgainstSchema)
+	//	setRequestBodyStepDefinition(h, `respects schema http://(.+)$`, h.AssertResponseIsValidAgainstSchema, h.AssertNamedHttpRequestResponseIsValidAgainstSchema)
+	//	setRequestBodyStepDefinition(h, `respects schema https://(.+)$`, h.AssertResponseIsValidAgainstSchema, h.AssertNamedHttpRequestResponseIsValidAgainstSchema)
 }
 
-func onResponseBodyPathCompareTo(h *HttpContext) {
-	doOnResponseBodyPathCompareTo(h, []string{"is", "isn't"}, map[string]HandlerFactory{
+func onJsonPathCompareTo(h *HttpContext) {
+	doOnJsonPathCompareTo(h, []string{"is", "isn't"}, map[string]HandlerFactory{
 		`"([^"]*)"`:       newJsonPathEqualsTo,
 		valueRegex:        newJsonPathEqualsTo,
 		`(-?\d+(\.\d+)?)`: newJsonPathEqualsToFloat64,
 		`(true|false)`:    newJsonPathEqualsToBooleanHandler,
 	}, []HandlerOpts{
-		{isAffirmation: true, isAliasAware: false},
-		{isAffirmation: true, isAliasAware: true},
-		{isAffirmation: false, isAliasAware: false},
-		{isAffirmation: false, isAliasAware: true},
+		{isAffirmationExpected: true, isAliasedFunction: false},
+		{isAffirmationExpected: true, isAliasedFunction: true},
+		{isAffirmationExpected: false, isAliasedFunction: false},
+		{isAffirmationExpected: false, isAliasedFunction: true},
 	})
-	doOnResponseBodyPathAndExecStringOperation(h, []string{"", "doesn't"})
+	doOnJsonPathStringOperation(h, []string{"", "doesn't"})
 }
 
-func doOnResponseBodyPathAndExecStringOperation(h *HttpContext, verbs []string) {
+func doOnJsonPathStringOperation(h *HttpContext, verbs []string) {
 	patterns := map[string]HandlerFactory{
 		"contains":        newJsonPathContainsHandler,
 		"ends with":       newJsonPathEndsWithHandler,
@@ -190,7 +210,7 @@ func doOnResponseBodyPathAndExecStringOperation(h *HttpContext, verbs []string) 
 			for i := 0; i < 2; i++ {
 				ignoreCase := i == 1
 				for _, verb := range verbs {
-					opt := HandlerOpts{isAffirmation: verb == verbs[0], isAliasAware: false, ignoreCase: ignoreCase, interpolateValue: true}
+					opt := HandlerOpts{isAffirmationExpected: verb == verbs[0], isAliasedFunction: false, ignoreCaseIfApplicable: ignoreCase, attemptValueResolution: true}
 					assertionPattern := pattern
 					if ignoreCase {
 						assertionPattern = "ignoring case " + assertionPattern
@@ -198,39 +218,39 @@ func doOnResponseBodyPathAndExecStringOperation(h *HttpContext, verbs []string) 
 					if verb == "doesn't" {
 						assertionPattern = verb + " " + negations[pattern]
 					}
-					assertResponseBodyPath(h, assertionPattern+" "+valueOpt, factory(h, HandlerOpts(opt)), factory(h, HandlerOpts(opt)))
+					setJsonPathStepDefinition(h, assertionPattern+" "+valueOpt, factory(h, HandlerOpts(opt)), factory(h, HandlerOpts(opt)))
 				}
 			}
 		}
 	}
 }
 
-func doOnResponseBodyPathCompareTo(h *HttpContext, verbs []string, patterns map[string]HandlerFactory, opts []HandlerOpts) {
+func doOnJsonPathCompareTo(h *HttpContext, verbs []string, patterns map[string]HandlerFactory, opts []HandlerOpts) {
 	for pattern, factory := range patterns {
 		for _, verb := range verbs {
 			for _, opt := range opts {
 				isAffirmation := verb == verbs[0]
 				assertionPattern := verb + " " + pattern
-				if opt.ignoreCase {
+				if opt.ignoreCaseIfApplicable {
 					assertionPattern = "ignoring case " + assertionPattern
 				}
 				target := HandlerOpts{
-					isAffirmation:    isAffirmation,
-					isAliasAware:     opt.isAliasAware,
-					ignoreCase:       opt.ignoreCase,
-					interpolateValue: opt.interpolateValue,
+					isAffirmationExpected:  isAffirmation,
+					isAliasedFunction:      opt.isAliasedFunction,
+					ignoreCaseIfApplicable: opt.ignoreCaseIfApplicable,
+					attemptValueResolution: opt.attemptValueResolution,
 				}
-				assertResponseBodyPath(h, assertionPattern, factory(h, target), factory(h, target))
+				setJsonPathStepDefinition(h, assertionPattern, factory(h, target), factory(h, target))
 			}
 		}
 	}
 }
 
-func assertResponseBodyPath(h *HttpContext, expr string, f any, namedF any) {
-	assertResponseBody(h, fmt.Sprintf(`\$(\S+) %s`, expr), f, namedF)
+func setJsonPathStepDefinition(h *HttpContext, expr string, f any, namedF any) {
+	setRequestBodyStepDefinition(h, fmt.Sprintf(`\$(\S+) %s`, expr), f, namedF)
 }
 
-func assertResponseBody(h *HttpContext, expr string, f any, namedF any) {
+func setRequestBodyStepDefinition(h *HttpContext, expr string, f any, namedF any) {
 	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body %s$`, expr), f)
 	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body %s$`, expr), f)
 	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body %s$`, expr), f)
