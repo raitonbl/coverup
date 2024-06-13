@@ -19,7 +19,7 @@ const (
 	httpsUriScheme URIScheme = "https"
 )
 
-func onJsonContentTypeDo(instance *HttpContext, alias string, h func(*HttpRequest, *HttpResponse) error) error {
+func execOnJsonContentType(instance *HttpContext, alias string, h func(*HttpRequest, *HttpResponse) error) error {
 	return instance.onNamedResponse(alias, func(req *HttpRequest, res *HttpResponse) error {
 		contentType, hasValue := res.headers["content-type"]
 		if !hasValue {
@@ -38,8 +38,8 @@ func onJsonContentTypeDo(instance *HttpContext, alias string, h func(*HttpReques
 	})
 }
 
-func onJsonPathDo(instance *HttpContext, alias, t string, h func(*HttpRequest, *HttpResponse, any) error) error {
-	return onJsonContentTypeDo(instance, alias, func(req *HttpRequest, res *HttpResponse) error {
+func execOnJsonPath(instance *HttpContext, alias, t string, h func(*HttpRequest, *HttpResponse, any) error) error {
+	return execOnJsonContentType(instance, alias, func(req *HttpRequest, res *HttpResponse) error {
 		expr := t
 		if strings.HasPrefix(expr, ".") {
 			expr = expr[1:]
@@ -63,7 +63,7 @@ func onJsonPathDo(instance *HttpContext, alias, t string, h func(*HttpRequest, *
 
 func newJsonSchemaValidator(instance *HttpContext, opts HandlerOpts) any {
 	f := func(alias string, value string) error {
-		return onJsonContentTypeDo(instance, alias, func(req *HttpRequest, res *HttpResponse) error {
+		return execOnJsonContentType(instance, alias, func(req *HttpRequest, res *HttpResponse) error {
 			if opts.scheme == noneUriScheme {
 				return fmt.Errorf("URI scheme must be defined")
 			}

@@ -103,7 +103,7 @@ func newJsonPathEndsWithHandler(instance *HttpContext, opts HandlerOpts) any {
 
 func newStringOperationJsonPathHandler(instance *HttpContext, operation string, opts HandlerOpts, predicate func(string, string) bool) any {
 	f := func(expr, alias string, c string) error {
-		return onJsonPathDo(instance, alias, expr, func(_ *HttpRequest, res *HttpResponse, value any) error {
+		return execOnJsonPath(instance, alias, expr, func(_ *HttpRequest, res *HttpResponse, value any) error {
 			if value == nil {
 				if alias == "" {
 					return fmt.Errorf(`$%s mustn't be undefined`, expr)

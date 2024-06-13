@@ -109,8 +109,21 @@ func onResponseHeaders(h *HttpContext) {
 }
 
 func onResponseBody(h *HttpContext) {
-	setRequestBodyStepDefinition(h, `is:$`, h.AssertResponseBodyEqualsToFile, h.AssertNamedHttpRequestResponseBodyEqualsToFile)
-	setRequestBodyStepDefinition(h, `is file://(.+)$`, h.AssertResponseBodyEqualsToFile, h.AssertNamedHttpRequestResponseBodyEqualsToFile)
+	//	setRequestBodyStepDefinition(h, `is:$`, h.AssertResponseBodyEqualsToFile, h.AssertNamedHttpRequestResponseBodyEqualsToFile)
+	//	setRequestBodyStepDefinition(h, `is file://(.+)$`, h.AssertResponseBodyEqualsToFile, h.AssertNamedHttpRequestResponseBodyEqualsToFile)
+	params := map[string]HandlerFactory{
+		":$":            newResponseBodyIsEqualToHandler,
+		" file://(.+)$": newResponseBodyIsEqualToFileHandler,
+	}
+	verbs := []string{"is", "isn't"}
+	for expr, f := range params {
+		for _, verb := range verbs {
+			isAffirmation := verb == verbs[0]
+			setRequestBodyStepDefinition(h, verb+expr,
+				f(h, HandlerOpts{isAffirmationExpected: isAffirmation, isAliasedFunction: false}),
+				f(h, HandlerOpts{isAffirmationExpected: isAffirmation, isAliasedFunction: true}))
+		}
+	}
 	onJsonPathCompareTo(h)
 	patterns := map[string][]any{}
 	patterns = map[string][]any{

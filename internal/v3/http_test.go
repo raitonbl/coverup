@@ -155,6 +155,8 @@ func TestHttpContext_AssertSimpleAttribute(m *testing.T) {
 		`response body respects schema file://schemas/product.json`,
 		`response body respects schema http://localhost:8080/schemas/product.json`,
 		`response body respects schema https://localhost:8443/schemas/product.json`,
+		//`response body is:"""{"id":"` + id + `"}"""`,
+		`response body is file://requests/product.json`,
 	}
 	for _, assertion := range opts {
 		m.Run(assertion, func(t *testing.T) {
@@ -232,6 +234,9 @@ func assertHttpGetProduct(t *testing.T, id string, def []byte, fm map[string]fun
 		for k, v := range fm {
 			m[k] = v
 		}
+	}
+	m["requests/product.json"] = func() ([]byte, error) {
+		return r, nil
 	}
 	m["schemas/product.json"] = func() ([]byte, error) {
 		return []byte(`
