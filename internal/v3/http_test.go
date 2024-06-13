@@ -155,11 +155,18 @@ func TestHttpContext_AssertSimpleAttribute(m *testing.T) {
 		`response body respects schema file://schemas/product.json`,
 		`response body respects schema http://localhost:8080/schemas/product.json`,
 		`response body respects schema https://localhost:8443/schemas/product.json`,
-		//`response body is:"""{"id":"` + id + `"}"""`,
+		`response body is:
+		"""
+			` + string(readProductFromFile(id)) + `
+		"""`,
 		`response body is file://requests/product.json`,
 	}
 	for _, assertion := range opts {
-		m.Run(assertion, func(t *testing.T) {
+		name := assertion
+		if len(name) > 35 {
+			name = name[:32] + "..."
+		}
+		m.Run(name, func(t *testing.T) {
 			assertHttpGetProduct(t, id, []byte(fmt.Sprintf(`
 		Feature: 
 			Scenario:
@@ -179,7 +186,52 @@ func TestHttpContext_AssertSimpleAttribute(m *testing.T) {
 }
 
 func assertHttpGetProduct(t *testing.T, id string, def []byte, fm map[string]func() ([]byte, error)) {
-	r := []byte(`
+	r := readProductFromFile(id)
+	m := make(map[string]func() ([]byte, error))
+	if fm != nil {
+		for k, v := range fm {
+			m[k] = v
+		}
+	}
+	m["requests/product.json"] = func() ([]byte, error) {
+		return r, nil
+	}
+	m["schemas/product.json"] = func() ([]byte, error) {
+		return getProductJSONSchema(), nil
+	}
+	fetchSchemaFromServer := func(request *http.Request) (*http.Response, error) {
+		f := m["schemas/product.json"]
+		binary, err := f()
+		if err != nil {
+			return nil, err
+		}
+		return &http.Response{
+			StatusCode: 200,
+			Status:     http.StatusText(200),
+			Header: map[string][]string{
+				"content-type": {"application/json"},
+			},
+			Body: io.NopCloser(bytes.NewBuffer(binary)),
+		}, nil
+	}
+	Exec(t, def, map[string]func(*http.Request) (*http.Response, error){
+		fmt.Sprintf("GET https://localhost:8443/items/%s", id): func(request *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: 200,
+				Status:     http.StatusText(200),
+				Header: map[string][]string{
+					"content-type": {"application/json"},
+				},
+				Body: io.NopCloser(bytes.NewBuffer(r)),
+			}, nil
+		},
+		"GET http://localhost:8080/schemas/product.json":  fetchSchemaFromServer,
+		"GET https://localhost:8443/schemas/product.json": fetchSchemaFromServer,
+	}, m)
+}
+
+func readProductFromFile(id string) []byte {
+	return []byte(`
 	{
 	  "id": "` + id + `",
 	  "name": "Seagate One Touch SSD 1TB External SSD Portable – Black, speeds up to 1030MB/s",
@@ -229,17 +281,10 @@ func assertHttpGetProduct(t *testing.T, id string, def []byte, fm map[string]fun
 		"installation_type": "EXTERNAL"
 	  }
 	}`)
-	m := make(map[string]func() ([]byte, error))
-	if fm != nil {
-		for k, v := range fm {
-			m[k] = v
-		}
-	}
-	m["requests/product.json"] = func() ([]byte, error) {
-		return r, nil
-	}
-	m["schemas/product.json"] = func() ([]byte, error) {
-		return []byte(`
+}
+
+func getProductJSONSchema() []byte {
+	return []byte(`
 			{
 			  "$schema": "http://json-schema.org/draft-07/schema#",
 			  "type": "object",
@@ -389,35 +434,5 @@ func assertHttpGetProduct(t *testing.T, id string, def []byte, fm map[string]fun
 				"characteristics"
 			  ]
 			}
-		`), nil
-	}
-	fetchSchemaFromServer := func(request *http.Request) (*http.Response, error) {
-		f := m["schemas/product.json"]
-		binary, err := f()
-		if err != nil {
-			return nil, err
-		}
-		return &http.Response{
-			StatusCode: 200,
-			Status:     http.StatusText(200),
-			Header: map[string][]string{
-				"content-type": {"application/json"},
-			},
-			Body: io.NopCloser(bytes.NewBuffer(binary)),
-		}, nil
-	}
-	Exec(t, def, map[string]func(*http.Request) (*http.Response, error){
-		fmt.Sprintf("GET https://localhost:8443/items/%s", id): func(request *http.Request) (*http.Response, error) {
-			return &http.Response{
-				StatusCode: 200,
-				Status:     http.StatusText(200),
-				Header: map[string][]string{
-					"content-type": {"application/json"},
-				},
-				Body: io.NopCloser(bytes.NewBuffer(r)),
-			}, nil
-		},
-		"GET http://localhost:8080/schemas/product.json":  fetchSchemaFromServer,
-		"GET https://localhost:8443/schemas/product.json": fetchSchemaFromServer,
-	}, m)
+		`)
 }

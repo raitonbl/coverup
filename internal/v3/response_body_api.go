@@ -11,7 +11,7 @@ func newResponseBodyIsEqualToHandler(instance *HttpContext, opts HandlerOpts) an
 	f := func(alias string, value *godog.DocString) error {
 		return execOnResponseBodyEqualsToHandler(instance, opts, alias, []byte(value.Content))
 	}
-	if !opts.isAffirmationExpected {
+	if !opts.isAliasedFunction {
 		return func(value *godog.DocString) error {
 			return f("", value)
 		}
@@ -27,7 +27,7 @@ func newResponseBodyIsEqualToFileHandler(instance *HttpContext, opts HandlerOpts
 		}
 		return execOnResponseBodyEqualsToHandler(instance, opts, alias, binary)
 	}
-	if !opts.isAffirmationExpected {
+	if !opts.isAliasedFunction {
 		return func(value string) error {
 			return f("", value)
 		}

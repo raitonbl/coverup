@@ -112,8 +112,8 @@ func onResponseBody(h *HttpContext) {
 	//	setRequestBodyStepDefinition(h, `is:$`, h.AssertResponseBodyEqualsToFile, h.AssertNamedHttpRequestResponseBodyEqualsToFile)
 	//	setRequestBodyStepDefinition(h, `is file://(.+)$`, h.AssertResponseBodyEqualsToFile, h.AssertNamedHttpRequestResponseBodyEqualsToFile)
 	params := map[string]HandlerFactory{
-		":$":            newResponseBodyIsEqualToHandler,
-		" file://(.+)$": newResponseBodyIsEqualToFileHandler,
+		":":            newResponseBodyIsEqualToHandler,
+		" file://(.*)": newResponseBodyIsEqualToFileHandler,
 	}
 	verbs := []string{"is", "isn't"}
 	for expr, f := range params {
