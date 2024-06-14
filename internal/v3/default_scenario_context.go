@@ -3,13 +3,14 @@ package v3
 import (
 	"fmt"
 	"github.com/cucumber/godog"
+	v3Pkg "github.com/raitonbl/coverup/internal/v3/pkg"
 	"github.com/raitonbl/coverup/pkg"
 	"io/fs"
 	"regexp"
 	"strings"
 )
 
-var valueRegexp = regexp.MustCompile(valueExpression)
+var valueRegexp = regexp.MustCompile(v3Pkg.ValueExpression)
 
 type DefaultScenarioContext struct {
 	Filesystem   fs.ReadFileFS

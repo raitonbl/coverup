@@ -1,10 +1,11 @@
-package v3
+package http
 
 import (
 	"bytes"
 	"errors"
 	"fmt"
 	"github.com/cucumber/godog"
+	"github.com/raitonbl/coverup/internal/v3/pkg"
 	"github.com/thoas/go-funk"
 	"github.com/xeipuuv/gojsonschema"
 	"io"
@@ -20,7 +21,7 @@ var pathRegexp, _ = regexp.Compile(`^\$((\.\w+)|(\[\d+\]))*$`)
 
 type HttpContext struct {
 	schemas map[string]any
-	ctx     ScenarioContext
+	ctx     pkg.ScenarioContext
 }
 
 func (instance *HttpContext) WithRequest() error {

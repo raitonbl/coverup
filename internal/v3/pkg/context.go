@@ -1,4 +1,4 @@
-package v3
+package pkg
 
 import (
 	"github.com/cucumber/godog"
@@ -7,7 +7,7 @@ import (
 	"io/fs"
 )
 
-const valueExpression = `\{\{\s*([a-zA-Z0-9_]+\.)*[a-zA-Z0-9_]+\s*\}\}`
+const ValueExpression = `\{\{\s*([a-zA-Z0-9_]+\.)*[a-zA-Z0-9_]+\s*\}\}`
 
 type ScenarioContext interface {
 	context.Context

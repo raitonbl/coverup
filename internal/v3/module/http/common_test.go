@@ -1,8 +1,9 @@
-package v3
+package http
 
 import (
 	"github.com/cucumber/godog"
 	"github.com/cucumber/godog/colors"
+	"github.com/raitonbl/coverup/internal/v3"
 	"github.com/raitonbl/coverup/pkg"
 	"io/fs"
 	"net/http"
@@ -36,7 +37,7 @@ func Exec(t *testing.T, definition []byte, c map[string]func(*http.Request) (*ht
 			Output: colors.Colored(os.Stdout),
 		},
 		ScenarioInitializer: func(goDogCtx *godog.ScenarioContext) {
-			ctx := &DefaultScenarioContext{
+			ctx := &v3.DefaultScenarioContext{
 				Filesystem:   filesystem,
 				GoDogContext: goDogCtx,
 				HttpClient:   httpClient,

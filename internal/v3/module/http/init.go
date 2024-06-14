@@ -1,7 +1,8 @@
-package v3
+package http
 
 import (
 	"fmt"
+	"github.com/raitonbl/coverup/internal/v3/pkg"
 	"strings"
 )
 
@@ -11,7 +12,7 @@ const valueRegex = `\{\{\s*([a-zA-Z0-9_]+\.)*[a-zA-Z0-9_]+\s*\}\}`
 const httpRequestRegex = `\{\{\s*HttpRequest\.[a-zA-Z0-9_]+\s*\}\}`
 const entityRegex = `\{\{\s*Entity\.[a-zA-Z0-9_]+\s*\}\}`
 
-func On(ctx ScenarioContext) {
+func On(ctx pkg.ScenarioContext) {
 	h := &HttpContext{
 		ctx: ctx,
 	}
