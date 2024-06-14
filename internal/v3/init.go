@@ -109,8 +109,6 @@ func onResponseHeaders(h *HttpContext) {
 }
 
 func onResponseBody(h *HttpContext) {
-	//	setRequestBodyStepDefinition(h, `is:$`, h.AssertResponseBodyEqualsToFile, h.AssertNamedHttpRequestResponseBodyEqualsToFile)
-	//	setRequestBodyStepDefinition(h, `is file://(.+)$`, h.AssertResponseBodyEqualsToFile, h.AssertNamedHttpRequestResponseBodyEqualsToFile)
 	params := map[string]HandlerFactory{
 		":":            newResponseBodyIsEqualToHandler,
 		" file://(.*)": newResponseBodyIsEqualToFileHandler,
@@ -126,14 +124,6 @@ func onResponseBody(h *HttpContext) {
 	}
 	onJsonPathCompareTo(h)
 	patterns := map[string][]any{}
-	patterns = map[string][]any{
-		"Time":     {h.AssertResponsePathIsTime, h.AssertNamedHttpRequestResponsePathIsTime},
-		"Date":     {h.AssertResponsePathIsDate, h.AssertNamedHttpRequestResponsePathIsDate},
-		"DateTime": {h.AssertResponsePathIsDateTime, h.AssertNamedHttpRequestResponsePathIsDateTime},
-	}
-	for expr, arr := range patterns {
-		setJsonPathStepDefinition(h, fmt.Sprintf(`is %s`, expr), arr[0], arr[1])
-	}
 	patterns = map[string][]any{
 		"is same":            {h.AssertResponsePathIsSame, h.AssertNamedHttpRequestResponsePathIsSame},
 		"is after":           {h.AssertResponsePathIsAfter, h.AssertNamedHttpRequestResponsePathIsAfter},
@@ -192,6 +182,9 @@ func onJsonPathCompareTo(h *HttpContext) {
 		valueRegex:        newJsonPathEqualsTo,
 		`(-?\d+(\.\d+)?)`: newJsonPathEqualsToFloat64,
 		`(true|false)`:    newJsonPathEqualsToBooleanHandler,
+		"Time":            newJsonPathIsTime,
+		"Date":            newJsonPathIsDate,
+		"DateTime":        newJsonPathIsDateTime,
 	}, []HandlerOpts{
 		{isAffirmationExpected: true, isAliasedFunction: false},
 		{isAffirmationExpected: true, isAliasedFunction: true},

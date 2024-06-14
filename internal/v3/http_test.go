@@ -160,6 +160,8 @@ func TestHttpContext_AssertSimpleAttribute(m *testing.T) {
 			` + string(readProductFromFile(id)) + `
 		"""`,
 		`response body is file://requests/product.json`,
+		`response body $.designed_at is Date`,
+		`response body $.offer_created_at is DateTime`,
 	}
 	for _, assertion := range opts {
 		name := assertion
@@ -240,6 +242,7 @@ func readProductFromFile(id string) []byte {
 	  "in_promotion": false,
 	  "offer_created_at": "2022-06-06T12:34:56Z",
 	  "offer_expires_at": "2024-12-31T23:59:56Z",
+      "designed_at":"2024-12-31",
 	  "about": [
 		"One Touch SSD is a mini USB 3.0 SSD featuring a lightweight, textile design for busy days and bustling commutes.",
 		"High-speed, portable solid state drive perfect for streaming stored videos directly to laptop, scrolling seamlessly through photos, and backing up content on the go. ",

@@ -6,6 +6,10 @@ import (
 	"strings"
 )
 
+var isoDateRegexp, _ = regexp.Compile(`^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$`)
+var isoTimeRegexp, _ = regexp.Compile(`^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?(\.\d{3})?$`)
+var isoDateTimeRegexp, _ = regexp.Compile(`^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(\.\d{3})?(Z|([+-](0[0-9]|1[0-3]):[0-5]\d))?$`)
+
 type HandlerOpts struct {
 	isAffirmationExpected  bool
 	isAliasedFunction      bool
@@ -15,6 +19,42 @@ type HandlerOpts struct {
 }
 
 type HandlerFactory func(instance *HttpContext, opts HandlerOpts) any
+
+func newJsonPathIsTime(instance *HttpContext, opts HandlerOpts) any {
+	return newJsonPathIsTemporal(instance, opts, "Time", isoTimeRegexp)
+}
+
+func newJsonPathIsDate(instance *HttpContext, opts HandlerOpts) any {
+	return newJsonPathIsTemporal(instance, opts, "Date", isoDateRegexp)
+}
+
+func newJsonPathIsDateTime(instance *HttpContext, opts HandlerOpts) any {
+	return newJsonPathIsTemporal(instance, opts, "DateTime", isoDateTimeRegexp)
+}
+
+func newJsonPathIsTemporal(instance *HttpContext, opts HandlerOpts, definedType string, regex *regexp.Regexp) any {
+	f := func(expr, alias string) error {
+		return instance.onNamedHttpRequestResponseBodyPath(expr, alias, func(_ *HttpRequest, res *HttpResponse, v any) error {
+			value, isString := v.(string)
+			if !isString {
+				return fmt.Errorf("$%s should be a string but got %v", expr, v)
+			}
+			if regex.Match([]byte(value)) == opts.isAffirmationExpected {
+				return nil
+			}
+			if opts.isAffirmationExpected {
+				return fmt.Errorf("expected %s but got %v", definedType, value)
+			}
+			return fmt.Errorf("expected non %s but got %v", definedType, value)
+		})
+	}
+	if opts.isAliasedFunction {
+		return f
+	}
+	return func(expr string) error {
+		return f(expr, "")
+	}
+}
 
 func newJsonPathEqualsTo(instance *HttpContext, opts HandlerOpts) any {
 	f := newJsonPathEqualsToAnyHandler(instance, opts)
@@ -103,53 +143,7 @@ func newJsonPathEndsWithHandler(instance *HttpContext, opts HandlerOpts) any {
 
 func newStringOperationJsonPathHandler(instance *HttpContext, operation string, opts HandlerOpts, predicate func(string, string) bool) any {
 	f := func(expr, alias string, c string) error {
-		return execOnJsonPath(instance, alias, expr, func(_ *HttpRequest, res *HttpResponse, value any) error {
-			if value == nil {
-				if alias == "" {
-					return fmt.Errorf(`$%s mustn't be undefined`, expr)
-				}
-				return fmt.Errorf(`%s.$%s mustn't be undefined`, alias, expr)
-			}
-			valueOf, isText := value.(string)
-			if !isText {
-				if alias == "" {
-					return fmt.Errorf(`$%s must be a string but got %v`, expr, value)
-				}
-				return fmt.Errorf(`%s.$%s must be a string but got %v`, alias, expr, value)
-			}
-			compareTo := c
-			if opts.attemptValueResolution {
-				v, err := instance.ctx.GetValue(c)
-				if err != nil {
-					return err
-				}
-				compareTo, isText = v.(string)
-				if !isText {
-					if alias == "" {
-						return fmt.Errorf(`%s must be a string but got %v`, c, value)
-					}
-					return fmt.Errorf(`%s must be a string but got %v`, c, value)
-				}
-			}
-			v1 := valueOf
-			v2 := compareTo
-			if opts.ignoreCaseIfApplicable {
-				v1 = strings.ToUpper(v1)
-				v2 = strings.ToUpper(v2)
-			}
-			r := predicate(v1, v2)
-			if r == opts.isAffirmationExpected {
-				return nil
-			}
-			condition := "must"
-			if !opts.isAffirmationExpected {
-				condition += "n't"
-			}
-			if alias == "" {
-				return fmt.Errorf(`$%s=%v %s %s %v`, expr, value, condition, operation, compareTo)
-			}
-			return fmt.Errorf(`%s.$%s=%v %s %s %v`, alias, expr, condition, operation, value, compareTo)
-		})
+		return doOnStringOperation(instance, operation, opts, alias, expr, c, predicate)
 	}
 	if opts.isAliasedFunction {
 		return f
@@ -157,4 +151,54 @@ func newStringOperationJsonPathHandler(instance *HttpContext, operation string, 
 	return func(expr string, compareTo string) error {
 		return f(expr, "", compareTo)
 	}
+}
+
+func doOnStringOperation(instance *HttpContext, operation string, opts HandlerOpts, alias, expr, c string, predicate func(string, string) bool) error {
+	return execOnJsonPath(instance, alias, expr, func(_ *HttpRequest, res *HttpResponse, value any) error {
+		if value == nil {
+			if alias == "" {
+				return fmt.Errorf(`$%s mustn't be undefined`, expr)
+			}
+			return fmt.Errorf(`%s.$%s mustn't be undefined`, alias, expr)
+		}
+		valueOf, isText := value.(string)
+		if !isText {
+			if alias == "" {
+				return fmt.Errorf(`$%s must be a string but got %v`, expr, value)
+			}
+			return fmt.Errorf(`%s.$%s must be a string but got %v`, alias, expr, value)
+		}
+		compareTo := c
+		if opts.attemptValueResolution {
+			v, err := instance.ctx.GetValue(c)
+			if err != nil {
+				return err
+			}
+			compareTo, isText = v.(string)
+			if !isText {
+				if alias == "" {
+					return fmt.Errorf(`%s must be a string but got %v`, c, value)
+				}
+				return fmt.Errorf(`%s must be a string but got %v`, c, value)
+			}
+		}
+		v1 := valueOf
+		v2 := compareTo
+		if opts.ignoreCaseIfApplicable {
+			v1 = strings.ToUpper(v1)
+			v2 = strings.ToUpper(v2)
+		}
+		r := predicate(v1, v2)
+		if r == opts.isAffirmationExpected {
+			return nil
+		}
+		condition := "must"
+		if !opts.isAffirmationExpected {
+			condition += "n't"
+		}
+		if alias == "" {
+			return fmt.Errorf(`$%s=%v %s %s %v`, expr, value, condition, operation, compareTo)
+		}
+		return fmt.Errorf(`%s.$%s=%v %s %s %v`, alias, expr, condition, operation, value, compareTo)
+	})
 }
