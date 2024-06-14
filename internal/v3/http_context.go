@@ -472,62 +472,6 @@ func (instance *HttpContext) onNamedHttpRequestResponseBodyPath(t, alias string,
 	})
 }
 
-func (instance *HttpContext) AssertResponseBodyEqualsToFile(compareTo string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertNamedHttpRequestResponseBodyEqualsToFile(alias string, compareTo string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertResponseBodyEqualsTo(value *godog.DocString) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertNamedHttpRequestResponseBodyEqualsTo(alias string, value *godog.DocString) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertResponsePathMatchesPattern(k string, value string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathMatchesPattern(alias, k, value string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathEndsWith(alias, k, value string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertWhileIgnoringCaseThatNamedHttpRequestResponsePathEndsWith(alias, k, value string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertResponsePathIsTime(k string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertResponsePathIsDate(k string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertResponsePathIsDateTime(k string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsTime(alias, k string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsDate(alias, k string) error {
-	return nil
-}
-
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsDateTime(alias, k string) error {
-	return nil
-}
-
 func (instance *HttpContext) AssertResponsePathIsSame(k, v string) error {
 	return nil
 }
