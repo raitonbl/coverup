@@ -2,13 +2,14 @@ package pkg
 
 import (
 	"fmt"
+	http2 "github.com/raitonbl/coverup/pkg/http"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 )
 
-func ReadFromURL(httpClient HttpClient, uri string) ([]byte, error) {
+func ReadFromURL(httpClient http2.Client, uri string) ([]byte, error) {
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
 		return nil, err

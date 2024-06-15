@@ -4,7 +4,7 @@ import (
 	"github.com/cucumber/godog"
 	"github.com/cucumber/godog/colors"
 	"github.com/raitonbl/coverup/internal/v3"
-	"github.com/raitonbl/coverup/pkg"
+	"github.com/raitonbl/coverup/pkg/api"
 	"io/fs"
 	"net/http"
 	"os"
@@ -41,8 +41,8 @@ func Exec(t *testing.T, definition []byte, c map[string]func(*http.Request) (*ht
 				Filesystem:   filesystem,
 				GoDogContext: goDogCtx,
 				HttpClient:   httpClient,
-				References:   make(map[string]pkg.Component),
-				Aliases:      make(map[string]map[string]pkg.Component),
+				References:   make(map[string]api.Component),
+				Aliases:      make(map[string]map[string]api.Component),
 			}
 			On(ctx)
 		},

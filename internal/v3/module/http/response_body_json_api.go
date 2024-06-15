@@ -19,7 +19,7 @@ const (
 	httpsUriScheme URIScheme = "https"
 )
 
-func execOnJsonContentType(instance *HttpContext, alias string, h func(*HttpRequest, *HttpResponse) error) error {
+func execOnJsonContentType(instance *Scenario, alias string, h func(*HttpRequest, *HttpResponse) error) error {
 	return instance.onNamedResponse(alias, func(req *HttpRequest, res *HttpResponse) error {
 		contentType, hasValue := res.headers["content-type"]
 		if !hasValue {
@@ -38,7 +38,7 @@ func execOnJsonContentType(instance *HttpContext, alias string, h func(*HttpRequ
 	})
 }
 
-func execOnJsonPath(instance *HttpContext, alias, t string, h func(*HttpRequest, *HttpResponse, any) error) error {
+func execOnJsonPath(instance *Scenario, alias, t string, h func(*HttpRequest, *HttpResponse, any) error) error {
 	return execOnJsonContentType(instance, alias, func(req *HttpRequest, res *HttpResponse) error {
 		expr := t
 		if strings.HasPrefix(expr, ".") {
@@ -61,7 +61,7 @@ func execOnJsonPath(instance *HttpContext, alias, t string, h func(*HttpRequest,
 	})
 }
 
-func newJsonSchemaValidator(instance *HttpContext, opts HandlerOpts) any {
+func newJsonSchemaValidator(instance *Scenario, opts HandlerOpts) any {
 	f := func(alias string, value string) error {
 		return execOnJsonContentType(instance, alias, func(req *HttpRequest, res *HttpResponse) error {
 			if opts.scheme == noneUriScheme {
@@ -113,7 +113,7 @@ func newJsonSchemaValidator(instance *HttpContext, opts HandlerOpts) any {
 	}
 }
 
-func doGetFromURI(instance *HttpContext, scheme URIScheme, value string) ([]byte, error) {
+func doGetFromURI(instance *Scenario, scheme URIScheme, value string) ([]byte, error) {
 	if scheme == fileUriScheme {
 		return instance.ctx.GetFS().ReadFile(value)
 	} else {

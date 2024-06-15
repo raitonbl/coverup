@@ -3,7 +3,7 @@ package internal
 import (
 	"bytes"
 	"embed"
-	"github.com/raitonbl/coverup/pkg"
+	http2 "github.com/raitonbl/coverup/pkg/http"
 	"io"
 	"net/http"
 )
@@ -11,8 +11,8 @@ import (
 type MockContext struct {
 	serverURL          string
 	workDirectory      string
-	httpClient         pkg.HttpClient
-	resourceHttpClient pkg.HttpClient
+	httpClient         http2.Client
+	resourceHttpClient http2.Client
 }
 
 func (m *MockContext) GetServerURL() string {
@@ -23,11 +23,11 @@ func (m *MockContext) GetWorkDirectory() string {
 	return m.workDirectory
 }
 
-func (m *MockContext) GetHttpClient() pkg.HttpClient {
+func (m *MockContext) GetHttpClient() http2.Client {
 	return m.httpClient
 }
 
-func (m *MockContext) GetResourcesHttpClient() pkg.HttpClient {
+func (m *MockContext) GetResourcesHttpClient() http2.Client {
 	return m.resourceHttpClient
 }
 

@@ -7,7 +7,7 @@ import (
 	"reflect"
 )
 
-func newResponseBodyIsEqualToHandler(instance *HttpContext, opts HandlerOpts) any {
+func newResponseBodyIsEqualToHandler(instance *Scenario, opts HandlerOpts) any {
 	f := func(alias string, value *godog.DocString) error {
 		return execOnResponseBodyEqualsToHandler(instance, opts, alias, []byte(value.Content))
 	}
@@ -19,7 +19,7 @@ func newResponseBodyIsEqualToHandler(instance *HttpContext, opts HandlerOpts) an
 	return f
 }
 
-func newResponseBodyIsEqualToFileHandler(instance *HttpContext, opts HandlerOpts) any {
+func newResponseBodyIsEqualToFileHandler(instance *Scenario, opts HandlerOpts) any {
 	f := func(alias string, value string) error {
 		binary, err := doGetFromURI(instance, fileUriScheme, value)
 		if err != nil {
@@ -35,7 +35,7 @@ func newResponseBodyIsEqualToFileHandler(instance *HttpContext, opts HandlerOpts
 	return f
 }
 
-func execOnResponseBody(instance *HttpContext, alias string, f func(*HttpRequest, *HttpResponse) error) error {
+func execOnResponseBody(instance *Scenario, alias string, f func(*HttpRequest, *HttpResponse) error) error {
 	return instance.onNamedHttpRequest(alias, func(req *HttpRequest) error {
 		if req.response == nil {
 			if alias == "" {
@@ -48,7 +48,7 @@ func execOnResponseBody(instance *HttpContext, alias string, f func(*HttpRequest
 	})
 }
 
-func execOnResponseBodyEqualsToHandler(instance *HttpContext, opts HandlerOpts, alias string, binary []byte) error {
+func execOnResponseBodyEqualsToHandler(instance *Scenario, opts HandlerOpts, alias string, binary []byte) error {
 	return execOnResponseBody(instance, alias, func(req *HttpRequest, res *HttpResponse) error {
 		var predicate func() (bool, error)
 		if res.headers["content-type"] == "application/json" {

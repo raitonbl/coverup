@@ -18,21 +18,21 @@ type HandlerOpts struct {
 	scheme                 URIScheme
 }
 
-type HandlerFactory func(instance *HttpContext, opts HandlerOpts) any
+type HandlerFactory func(instance *Scenario, opts HandlerOpts) any
 
-func newJsonPathIsTime(instance *HttpContext, opts HandlerOpts) any {
+func newJsonPathIsTime(instance *Scenario, opts HandlerOpts) any {
 	return newJsonPathIsTemporal(instance, opts, "Time", isoTimeRegexp)
 }
 
-func newJsonPathIsDate(instance *HttpContext, opts HandlerOpts) any {
+func newJsonPathIsDate(instance *Scenario, opts HandlerOpts) any {
 	return newJsonPathIsTemporal(instance, opts, "Date", isoDateRegexp)
 }
 
-func newJsonPathIsDateTime(instance *HttpContext, opts HandlerOpts) any {
+func newJsonPathIsDateTime(instance *Scenario, opts HandlerOpts) any {
 	return newJsonPathIsTemporal(instance, opts, "DateTime", isoDateTimeRegexp)
 }
 
-func newJsonPathIsTemporal(instance *HttpContext, opts HandlerOpts, definedType string, regex *regexp.Regexp) any {
+func newJsonPathIsTemporal(instance *Scenario, opts HandlerOpts, definedType string, regex *regexp.Regexp) any {
 	f := func(expr, alias string) error {
 		return instance.onNamedHttpRequestResponseBodyPath(expr, alias, func(_ *HttpRequest, res *HttpResponse, v any) error {
 			value, isString := v.(string)
@@ -56,7 +56,7 @@ func newJsonPathIsTemporal(instance *HttpContext, opts HandlerOpts, definedType 
 	}
 }
 
-func newJsonPathEqualsTo(instance *HttpContext, opts HandlerOpts) any {
+func newJsonPathEqualsTo(instance *Scenario, opts HandlerOpts) any {
 	f := newJsonPathEqualsToAnyHandler(instance, opts)
 	if opts.isAliasedFunction {
 		return func(expr, alias, compareTo string) error {
@@ -68,7 +68,7 @@ func newJsonPathEqualsTo(instance *HttpContext, opts HandlerOpts) any {
 	}
 }
 
-func newJsonPathEqualsToFloat64(instance *HttpContext, opts HandlerOpts) any {
+func newJsonPathEqualsToFloat64(instance *Scenario, opts HandlerOpts) any {
 	f := newJsonPathEqualsToAnyHandler(instance, opts)
 	if opts.isAliasedFunction {
 		return func(expr, alias string, compareTo float64) error {
@@ -80,7 +80,7 @@ func newJsonPathEqualsToFloat64(instance *HttpContext, opts HandlerOpts) any {
 	}
 }
 
-func newJsonPathEqualsToBooleanHandler(instance *HttpContext, opts HandlerOpts) any {
+func newJsonPathEqualsToBooleanHandler(instance *Scenario, opts HandlerOpts) any {
 	f := newJsonPathEqualsToAnyHandler(instance, opts)
 	if opts.isAliasedFunction {
 		return func(expr, alias string, compareTo string) error {
@@ -94,7 +94,7 @@ func newJsonPathEqualsToBooleanHandler(instance *HttpContext, opts HandlerOpts) 
 	}
 }
 
-func newJsonPathEqualsToAnyHandler(instance *HttpContext, opts HandlerOpts) any {
+func newJsonPathEqualsToAnyHandler(instance *Scenario, opts HandlerOpts) any {
 	f := func(expr, alias string, compareTo any) error {
 		return instance.onNamedHttpRequestResponseBodyPath(expr, alias, func(_ *HttpRequest, response *HttpResponse, value any) error {
 			if (value == compareTo) == opts.isAffirmationExpected {
@@ -118,15 +118,15 @@ func newJsonPathEqualsToAnyHandler(instance *HttpContext, opts HandlerOpts) any 
 	}
 }
 
-func newJsonPathContainsHandler(instance *HttpContext, opts HandlerOpts) any {
+func newJsonPathContainsHandler(instance *Scenario, opts HandlerOpts) any {
 	return newStringOperationJsonPathHandler(instance, "contain", opts, strings.Contains)
 }
 
-func newJsonPathStartsWithHandler(instance *HttpContext, opts HandlerOpts) any {
+func newJsonPathStartsWithHandler(instance *Scenario, opts HandlerOpts) any {
 	return newStringOperationJsonPathHandler(instance, "starts with", opts, strings.HasPrefix)
 }
 
-func newJsonPathPatternHandler(instance *HttpContext, opts HandlerOpts) any {
+func newJsonPathPatternHandler(instance *Scenario, opts HandlerOpts) any {
 	return newStringOperationJsonPathHandler(instance, "matches pattern", opts, func(fromResponse string, value string) bool {
 		r, err := regexp.Compile(value)
 		if err != nil {
@@ -137,11 +137,11 @@ func newJsonPathPatternHandler(instance *HttpContext, opts HandlerOpts) any {
 	})
 }
 
-func newJsonPathEndsWithHandler(instance *HttpContext, opts HandlerOpts) any {
+func newJsonPathEndsWithHandler(instance *Scenario, opts HandlerOpts) any {
 	return newStringOperationJsonPathHandler(instance, "ends with", opts, strings.HasSuffix)
 }
 
-func newStringOperationJsonPathHandler(instance *HttpContext, operation string, opts HandlerOpts, predicate func(string, string) bool) any {
+func newStringOperationJsonPathHandler(instance *Scenario, operation string, opts HandlerOpts, predicate func(string, string) bool) any {
 	f := func(expr, alias string, c string) error {
 		return doOnStringOperation(instance, operation, opts, alias, expr, c, predicate)
 	}
@@ -153,7 +153,7 @@ func newStringOperationJsonPathHandler(instance *HttpContext, operation string, 
 	}
 }
 
-func doOnStringOperation(instance *HttpContext, operation string, opts HandlerOpts, alias, expr, c string, predicate func(string, string) bool) error {
+func doOnStringOperation(instance *Scenario, operation string, opts HandlerOpts, alias, expr, c string, predicate func(string, string) bool) error {
 	return execOnJsonPath(instance, alias, expr, func(_ *HttpRequest, res *HttpResponse, value any) error {
 		if value == nil {
 			if alias == "" {

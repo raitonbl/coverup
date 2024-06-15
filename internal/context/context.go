@@ -1,9 +1,11 @@
 package context
 
-import "github.com/raitonbl/coverup/pkg"
+import (
+	"github.com/raitonbl/coverup/pkg/http"
+)
 
 type Context interface {
 	GetServerURL() string
-	GetHttpClient() pkg.HttpClient
-	GetResourcesHttpClient() pkg.HttpClient
+	GetHttpClient() http.Client
+	GetResourcesHttpClient() http.Client
 }

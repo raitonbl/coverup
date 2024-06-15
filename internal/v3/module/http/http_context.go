@@ -19,26 +19,28 @@ const ComponentType = "HttpRequest"
 
 var pathRegexp, _ = regexp.Compile(`^\$((\.\w+)|(\[\d+\]))*$`)
 
-type HttpContext struct {
+type Scenario struct {
 	schemas map[string]any
 	ctx     pkg.ScenarioContext
 }
 
-func (instance *HttpContext) WithRequest() error {
+func (instance *Scenario) WithRequest() error {
 	return instance.WithRequestWhenAlias("")
 }
 
-func (instance *HttpContext) WithRequestWhenAlias(alias string) error {
+func (instance *Scenario) WithRequestWhenAlias(alias string) error {
 	return instance.ctx.Register(ComponentType, &HttpRequest{
 		headers: make(map[string]string),
 	}, alias)
 }
 
-func (instance *HttpContext) onHttpRequest(f func(*HttpRequest) error) error {
+// Deprecated
+func (instance *Scenario) onHttpRequest(f func(*HttpRequest) error) error {
 	return instance.onNamedHttpRequest("", f)
 }
 
-func (instance *HttpContext) onNamedHttpRequest(alias string, f func(*HttpRequest) error) error {
+// Deprecated
+func (instance *Scenario) onNamedHttpRequest(alias string, f func(*HttpRequest) error) error {
 	valueOf, err := instance.ctx.GetComponent(ComponentType, alias)
 	if err != nil {
 		return err
@@ -49,7 +51,18 @@ func (instance *HttpContext) onNamedHttpRequest(alias string, f func(*HttpReques
 	return fmt.Errorf("please define %s before using it", ComponentType)
 }
 
-func (instance *HttpContext) WithHeaders(table *godog.Table) error {
+func (instance *Scenario) getRequest(alias string) (*HttpRequest, error) {
+	valueOf, err := instance.ctx.GetComponent(ComponentType, alias)
+	if err != nil {
+		return nil, err
+	}
+	if r, isHttpRequest := valueOf.(*HttpRequest); isHttpRequest {
+		return r, nil
+	}
+	return nil, fmt.Errorf("please define %s before using it", ComponentType)
+}
+
+func (instance *Scenario) WithHeaders(table *godog.Table) error {
 	return instance.onHttpRequest(func(req *HttpRequest) error {
 		if req.headers == nil {
 			req.headers = make(map[string]string)
@@ -69,13 +82,13 @@ func (instance *HttpContext) WithHeaders(table *godog.Table) error {
 	})
 }
 
-func (instance *HttpContext) WithHeader(name, value string) error {
+func (instance *Scenario) WithHeader(name, value string) error {
 	return instance.onHttpRequest(func(req *HttpRequest) error {
 		return instance.withHeader(req, name, value)
 	})
 }
 
-func (instance *HttpContext) withHeader(req *HttpRequest, name, value string) error {
+func (instance *Scenario) withHeader(req *HttpRequest, name, value string) error {
 	if req.headers == nil {
 		req.headers = make(map[string]string)
 	}
@@ -87,7 +100,7 @@ func (instance *HttpContext) withHeader(req *HttpRequest, name, value string) er
 	return nil
 }
 
-func (instance *HttpContext) WithMethod(method string) error {
+func (instance *Scenario) WithMethod(method string) error {
 	return instance.onHttpRequest(func(req *HttpRequest) error {
 		switch method {
 		case "OPTIONS":
@@ -110,12 +123,12 @@ func (instance *HttpContext) WithMethod(method string) error {
 	})
 }
 
-func (instance *HttpContext) withMethod(req *HttpRequest, method string) error {
+func (instance *Scenario) withMethod(req *HttpRequest, method string) error {
 	req.method = method
 	return nil
 }
 
-func (instance *HttpContext) WithPath(path string) error {
+func (instance *Scenario) WithPath(path string) error {
 	return instance.onHttpRequest(func(req *HttpRequest) error {
 		valueOf, err := instance.ctx.GetValue(path)
 		if err != nil {
@@ -126,7 +139,7 @@ func (instance *HttpContext) WithPath(path string) error {
 	})
 }
 
-func (instance *HttpContext) WithHttpPath(url string) error {
+func (instance *Scenario) WithHttpPath(url string) error {
 	return instance.onHttpRequest(func(req *HttpRequest) error {
 		valueOf, err := instance.ctx.GetValue(url)
 		if err != nil {
@@ -138,7 +151,7 @@ func (instance *HttpContext) WithHttpPath(url string) error {
 	})
 }
 
-func (instance *HttpContext) WithHttpsPath(url string) error {
+func (instance *Scenario) WithHttpsPath(url string) error {
 	return instance.onHttpRequest(func(req *HttpRequest) error {
 		valueOf, err := instance.ctx.GetValue(url)
 		if err != nil {
@@ -150,7 +163,7 @@ func (instance *HttpContext) WithHttpsPath(url string) error {
 	})
 }
 
-func (instance *HttpContext) WithServerURL(url string) error {
+func (instance *Scenario) WithServerURL(url string) error {
 	return instance.onHttpRequest(func(req *HttpRequest) error {
 		valueOf, err := instance.ctx.GetValue(url)
 		if err != nil {
@@ -162,13 +175,13 @@ func (instance *HttpContext) WithServerURL(url string) error {
 	})
 }
 
-func (instance *HttpContext) WithBody(body *godog.DocString) error {
+func (instance *Scenario) WithBody(body *godog.DocString) error {
 	return instance.withBody(func() ([]byte, error) {
 		return []byte(body.Content), nil
 	})
 }
 
-func (instance *HttpContext) withBody(s func() ([]byte, error)) error {
+func (instance *Scenario) withBody(s func() ([]byte, error)) error {
 	return instance.onHttpRequest(func(req *HttpRequest) error {
 		binary, err := s()
 		if err != nil {
@@ -180,7 +193,7 @@ func (instance *HttpContext) withBody(s func() ([]byte, error)) error {
 	})
 }
 
-func (instance *HttpContext) WithBodyFileURI(value string) error {
+func (instance *Scenario) WithBodyFileURI(value string) error {
 	return instance.withBody(func() ([]byte, error) {
 		valueOf, err := instance.ctx.GetValue(value)
 		if err != nil {
@@ -190,15 +203,15 @@ func (instance *HttpContext) WithBodyFileURI(value string) error {
 	})
 }
 
-func (instance *HttpContext) WithAcceptHeader(value string) error {
+func (instance *Scenario) WithAcceptHeader(value string) error {
 	return instance.WithHeader("Accept", value)
 }
 
-func (instance *HttpContext) WithContentTypeHeader(value string) error {
+func (instance *Scenario) WithContentTypeHeader(value string) error {
 	return instance.WithHeader("Content-Type", value)
 }
 
-func (instance *HttpContext) WithFormEncType(value string) error {
+func (instance *Scenario) WithFormEncType(value string) error {
 	return instance.onForm(func(form *Form) error {
 		if value == "multipart/form-data" || value == "application/x-www-form-urlencoded" {
 			form.encType = value
@@ -208,7 +221,7 @@ func (instance *HttpContext) WithFormEncType(value string) error {
 	})
 }
 
-func (instance *HttpContext) WithFormAttribute(name, value string) error {
+func (instance *Scenario) WithFormAttribute(name, value string) error {
 	return instance.onFormAttribute(name, func() (any, error) {
 		valueOf, err := instance.ctx.GetValue(value)
 		if err != nil {
@@ -218,7 +231,7 @@ func (instance *HttpContext) WithFormAttribute(name, value string) error {
 	})
 }
 
-func (instance *HttpContext) WithFormFile(name, value string) error {
+func (instance *Scenario) WithFormFile(name, value string) error {
 	return instance.onFormAttribute(name, func() (any, error) {
 		valueOf, err := instance.ctx.GetValue(value)
 		if err != nil {
@@ -228,7 +241,7 @@ func (instance *HttpContext) WithFormFile(name, value string) error {
 	})
 }
 
-func (instance *HttpContext) onFormAttribute(name string, f func() (any, error)) error {
+func (instance *Scenario) onFormAttribute(name string, f func() (any, error)) error {
 	return instance.onForm(func(form *Form) error {
 		valueOf, err := f()
 		if err != nil {
@@ -239,7 +252,7 @@ func (instance *HttpContext) onFormAttribute(name string, f func() (any, error))
 	})
 }
 
-func (instance *HttpContext) onForm(s func(*Form) error) error {
+func (instance *Scenario) onForm(s func(*Form) error) error {
 	return instance.onHttpRequest(func(req *HttpRequest) error {
 		form := req.form
 		if form == nil {
@@ -254,7 +267,7 @@ func (instance *HttpContext) onForm(s func(*Form) error) error {
 	})
 }
 
-func (instance *HttpContext) get(alias string) (*HttpRequest, error) {
+func (instance *Scenario) get(alias string) (*HttpRequest, error) {
 	valueOf, err := instance.ctx.GetComponent(ComponentType, alias)
 	if err != nil {
 		return nil, err
@@ -269,19 +282,23 @@ func (instance *HttpContext) get(alias string) (*HttpRequest, error) {
 	return req, nil
 }
 
-func (instance *HttpContext) SubmitHttpRequest() error {
+// Deprecated
+func (instance *Scenario) SubmitHttpRequest() error {
 	return instance.SubmitHttpRequestOnBehalfOfEntity("")
 }
 
-func (instance *HttpContext) SubmitHttpRequestOnBehalfOfEntity(id string) error {
+// Deprecated
+func (instance *Scenario) SubmitHttpRequestOnBehalfOfEntity(id string) error {
 	return instance.SubmitNamedHttpRequestOnBehalfOfEntity("", id)
 }
 
-func (instance *HttpContext) SubmitNamedHttpRequest(alias string) error {
+// Deprecated
+func (instance *Scenario) SubmitNamedHttpRequest(alias string) error {
 	return instance.SubmitNamedHttpRequestOnBehalfOfEntity(alias, "")
 }
 
-func (instance *HttpContext) SubmitNamedHttpRequestOnBehalfOfEntity(alias, id string) error {
+// Deprecated
+func (instance *Scenario) SubmitNamedHttpRequestOnBehalfOfEntity(alias, id string) error {
 	return instance.onNamedHttpRequest(alias, func(req *HttpRequest) error {
 		if id != "" {
 			panic("not implemented")
@@ -293,7 +310,8 @@ func (instance *HttpContext) SubmitNamedHttpRequestOnBehalfOfEntity(alias, id st
 	})
 }
 
-func (instance *HttpContext) doSubmitHttpRequest(src *HttpRequest) error {
+// Deprecated
+func (instance *Scenario) doSubmitHttpRequest(src *HttpRequest) error {
 	var body io.Reader
 	if src.body != nil {
 		body = bytes.NewReader(src.body)
@@ -334,7 +352,8 @@ func (instance *HttpContext) doSubmitHttpRequest(src *HttpRequest) error {
 	return nil
 }
 
-func (instance *HttpContext) onNamedResponse(alias string, f func(*HttpRequest, *HttpResponse) error) error {
+// Deprecated
+func (instance *Scenario) onNamedResponse(alias string, f func(*HttpRequest, *HttpResponse) error) error {
 	return instance.onNamedHttpRequest(alias, func(req *HttpRequest) error {
 		if req.response == nil {
 			if alias == "" {
@@ -347,11 +366,26 @@ func (instance *HttpContext) onNamedResponse(alias string, f func(*HttpRequest, 
 	})
 }
 
-func (instance *HttpContext) AssertResponseStatusCode(statusCode int) error {
+func (instance *Scenario) getResponse(alias string) (*HttpResponse, error) {
+	req, err := instance.getRequest(alias)
+	if err != nil {
+		return nil, err
+	}
+	if req.response == nil {
+		if alias == "" {
+			return nil, fmt.Errorf(`%s needs to be submitted before making assertions`, ComponentType)
+		} else {
+			return nil, fmt.Errorf(`%s["%s"] needs to be submitted before making assertions`, ComponentType, alias)
+		}
+	}
+	return req.response, nil
+}
+
+func (instance *Scenario) AssertResponseStatusCode(statusCode int) error {
 	return instance.AssertNamedHttpRequestResponseStatusCode("", statusCode)
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponseStatusCode(alias string, statusCode int) error {
+func (instance *Scenario) AssertNamedHttpRequestResponseStatusCode(alias string, statusCode int) error {
 	return instance.onNamedResponse(alias, func(_ *HttpRequest, response *HttpResponse) error {
 		if response.statusCode != statusCode {
 			if alias == "" {
@@ -363,43 +397,44 @@ func (instance *HttpContext) AssertNamedHttpRequestResponseStatusCode(alias stri
 	})
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponseExactHeaders(alias string, table *godog.Table) error {
+func (instance *Scenario) AssertNamedHttpRequestResponseExactHeaders(alias string, table *godog.Table) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponseExactHeaders(table *godog.Table) error {
+func (instance *Scenario) AssertResponseExactHeaders(table *godog.Table) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponseContainsHeaders(table *godog.Table) error {
+func (instance *Scenario) AssertResponseContainsHeaders(table *godog.Table) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponseContainsHeaders(alias string, table *godog.Table) error {
+func (instance *Scenario) AssertNamedHttpRequestResponseContainsHeaders(alias string, table *godog.Table) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponseHeader(name, value string) error {
+func (instance *Scenario) AssertResponseHeader(name, value string) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponseContentType(value string) error {
+func (instance *Scenario) AssertResponseContentType(value string) error {
 	return instance.AssertResponseHeader("content-type", value)
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponseContentType(alias, value string) error {
+func (instance *Scenario) AssertNamedHttpRequestResponseContentType(alias, value string) error {
 	return instance.AssertNamedHttpRequestResponseHeader(alias, "content-type", value)
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponseHeader(alias string, header string, value string) error {
+func (instance *Scenario) AssertNamedHttpRequestResponseHeader(alias string, header string, value string) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponseIsValidAgainstSchema(file string) error {
+func (instance *Scenario) AssertResponseIsValidAgainstSchema(file string) error {
 	return instance.AssertNamedHttpRequestResponseIsValidAgainstSchema("", file)
 }
 
-func (instance *HttpContext) onNamedHttpRequestResponseWithJsonContentType(alias string, f func(*HttpRequest, *HttpResponse) error) error {
+// Deprecated
+func (instance *Scenario) onNamedHttpRequestResponseWithJsonContentType(alias string, f func(*HttpRequest, *HttpResponse) error) error {
 	return instance.onNamedResponse(alias, func(req *HttpRequest, res *HttpResponse) error {
 		contentType, hasValue := res.headers["content-type"]
 		if !hasValue {
@@ -418,7 +453,53 @@ func (instance *HttpContext) onNamedHttpRequestResponseWithJsonContentType(alias
 	})
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponseIsValidAgainstSchema(alias, value string) error {
+func (instance *Scenario) getResponseWithJsonContentType(alias string) (*HttpResponse, error) {
+	res, err := instance.getResponse(alias)
+	if err != nil {
+		return nil, err
+	}
+	contentType, hasValue := res.headers["content-type"]
+	if !hasValue {
+		if alias == "" {
+			return nil, fmt.Errorf(`%s.headers["content-type"] must be "application/json" or "aplication/problem+json"`, ComponentType)
+		}
+		return nil, fmt.Errorf(`%s.%s.headers["content-type"] must be "application/json" or "aplication/problem+json"`, ComponentType, alias)
+	}
+	if contentType != "application/json" && contentType != "application/problem+json" {
+		if alias == "" {
+			return nil, fmt.Errorf(`%s.headers["content-type"] must be "application/json" or "aplication/problem+json" but content-type is "%s"`, ComponentType, contentType)
+		}
+		return nil, fmt.Errorf(`%s.%s.headers["content-type"] must be "application/json" or "aplication/problem+json" but content-type is "%s"`, ComponentType, alias, contentType)
+	}
+	return res, nil
+}
+
+func (instance *Scenario) getResponseValueFromExpression(alias, t string) (any, error) {
+	res, err := instance.getResponse(alias)
+	if err != nil {
+		return nil, err
+	}
+	expr := t
+	if strings.HasPrefix(expr, ".") {
+		expr = expr[1:]
+	}
+	if len(res.body) == 0 {
+		if alias == "" {
+			return nil, fmt.Errorf(`cannot determine %s.body.$%s since body is undefined`, ComponentType, expr)
+		}
+		return nil, fmt.Errorf(`cannot determine %s["%s"].body.$%s since body is undefined`, ComponentType, alias, expr)
+	}
+	valueOf, err := res.JSONPath(expr)
+	if err != nil {
+		if alias == "" {
+			return nil, fmt.Errorf(`cannot determine %s.body.$%s due to error:\n%v`, ComponentType, expr, err)
+		}
+		return nil, fmt.Errorf(`cannot determine %s["%s"].body.$%s due to error:\n%v`, ComponentType, alias, expr, err)
+	}
+	return valueOf, nil
+}
+
+func (instance *Scenario) AssertNamedHttpRequestResponseIsValidAgainstSchema(alias, value string) error {
 	return instance.onNamedHttpRequestResponseWithJsonContentType(alias, func(_ *HttpRequest, response *HttpResponse) error {
 		if instance.schemas == nil {
 			instance.schemas = make(map[string]any)
@@ -450,7 +531,7 @@ func (instance *HttpContext) AssertNamedHttpRequestResponseIsValidAgainstSchema(
 	})
 }
 
-func (instance *HttpContext) onNamedHttpRequestResponseBodyPath(t, alias string, f func(*HttpRequest, *HttpResponse, any) error) error {
+func (instance *Scenario) onNamedHttpRequestResponseBodyPath(t, alias string, f func(*HttpRequest, *HttpResponse, any) error) error {
 	return instance.onNamedHttpRequestResponseWithJsonContentType(alias, func(req *HttpRequest, res *HttpResponse) error {
 		expr := t
 		if strings.HasPrefix(expr, ".") {
@@ -473,130 +554,130 @@ func (instance *HttpContext) onNamedHttpRequestResponseBodyPath(t, alias string,
 	})
 }
 
-func (instance *HttpContext) AssertResponsePathIsSame(k, v string) error {
+func (instance *Scenario) AssertResponsePathIsSame(k, v string) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponsePathIsAfter(k, v string) error {
+func (instance *Scenario) AssertResponsePathIsAfter(k, v string) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponsePathIsSameOrAfter(k, v string) error {
+func (instance *Scenario) AssertResponsePathIsSameOrAfter(k, v string) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponsePathIsSameOrBefore(k, v string) error {
+func (instance *Scenario) AssertResponsePathIsSameOrBefore(k, v string) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponsePathIsBefore(k, v string) error {
+func (instance *Scenario) AssertResponsePathIsBefore(k, v string) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsSame(k, v string) error {
+func (instance *Scenario) AssertNamedHttpRequestResponsePathIsSame(k, v string) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsAfter(k, v string) error {
+func (instance *Scenario) AssertNamedHttpRequestResponsePathIsAfter(k, v string) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsSameOrAfter(k, v string) error {
+func (instance *Scenario) AssertNamedHttpRequestResponsePathIsSameOrAfter(k, v string) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsSameOrBefore(k, v string) error {
+func (instance *Scenario) AssertNamedHttpRequestResponsePathIsSameOrBefore(k, v string) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsBefore(k, v string) error {
+func (instance *Scenario) AssertNamedHttpRequestResponsePathIsBefore(k, v string) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponsePathLengthIs(k string, value float64) error {
+func (instance *Scenario) AssertResponsePathLengthIs(k string, value float64) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathLengthIs(alias, k string, value float64) error {
+func (instance *Scenario) AssertNamedHttpRequestResponsePathLengthIs(alias, k string, value float64) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponsePathIsGreaterThan(k string, value float64) error {
+func (instance *Scenario) AssertResponsePathIsGreaterThan(k string, value float64) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponsePathIsGreaterThanOrEqualTo(k string, value float64) error {
+func (instance *Scenario) AssertResponsePathIsGreaterThanOrEqualTo(k string, value float64) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponsePathIsLesserThan(k string, value float64) error {
+func (instance *Scenario) AssertResponsePathIsLesserThan(k string, value float64) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponsePathIsLesserThanOrEqualTo(k string, value float64) error {
+func (instance *Scenario) AssertResponsePathIsLesserThanOrEqualTo(k string, value float64) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponsePathIsGreaterThanValue(k string, value float64) error {
+func (instance *Scenario) AssertResponsePathIsGreaterThanValue(k string, value float64) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponsePathIsGreaterThanOrEqualToValue(k string, value float64) error {
+func (instance *Scenario) AssertResponsePathIsGreaterThanOrEqualToValue(k string, value float64) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponsePathIsLesserThanValue(k string, value float64) error {
+func (instance *Scenario) AssertResponsePathIsLesserThanValue(k string, value float64) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponsePathIsLesserThanOrEqualToValue(k string, value float64) error {
+func (instance *Scenario) AssertResponsePathIsLesserThanOrEqualToValue(k string, value float64) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsGreaterThan(alias, k string, value float64) error {
+func (instance *Scenario) AssertNamedHttpRequestResponsePathIsGreaterThan(alias, k string, value float64) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsGreaterThanOrEqualTo(alias, k string, value float64) error {
+func (instance *Scenario) AssertNamedHttpRequestResponsePathIsGreaterThanOrEqualTo(alias, k string, value float64) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsLesserThan(alias, k string, value float64) error {
+func (instance *Scenario) AssertNamedHttpRequestResponsePathIsLesserThan(alias, k string, value float64) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsLesserThanOrEqualTo(alias, k string, value float64) error {
+func (instance *Scenario) AssertNamedHttpRequestResponsePathIsLesserThanOrEqualTo(alias, k string, value float64) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsGreaterThanValue(alias, k string, value float64) error {
+func (instance *Scenario) AssertNamedHttpRequestResponsePathIsGreaterThanValue(alias, k string, value float64) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsGreaterThanOrEqualToValue(alias, k string, value float64) error {
+func (instance *Scenario) AssertNamedHttpRequestResponsePathIsGreaterThanOrEqualToValue(alias, k string, value float64) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsLesserThanValue(alias, k string, value float64) error {
+func (instance *Scenario) AssertNamedHttpRequestResponsePathIsLesserThanValue(alias, k string, value float64) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsLesserThanOrEqualToValue(alias, k string, value float64) error {
+func (instance *Scenario) AssertNamedHttpRequestResponsePathIsLesserThanOrEqualToValue(alias, k string, value float64) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponsePathIsInStringArray(k string, value string) error {
+func (instance *Scenario) AssertResponsePathIsInStringArray(k string, value string) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertResponsePathIsInNumericArray(k string, value string) error {
+func (instance *Scenario) AssertResponsePathIsInNumericArray(k string, value string) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsInStringArray(alias, k string, value string) error {
+func (instance *Scenario) AssertNamedHttpRequestResponsePathIsInStringArray(alias, k string, value string) error {
 	return nil
 }
 
-func (instance *HttpContext) AssertNamedHttpRequestResponsePathIsInNumericArray(alias, k string, value string) error {
+func (instance *Scenario) AssertNamedHttpRequestResponsePathIsInNumericArray(alias, k string, value string) error {
 	return nil
 }

@@ -2,7 +2,8 @@ package context
 
 import (
 	"fmt"
-	"github.com/raitonbl/coverup/pkg"
+	"github.com/raitonbl/coverup/pkg/api"
+	"github.com/raitonbl/coverup/pkg/http"
 	"regexp"
 	"strings"
 )
@@ -11,19 +12,19 @@ var valueRegexp = regexp.MustCompile(`{{\s*([\w.]+)\s*}}`)
 
 type Builder struct {
 	context    Context
-	references map[string]pkg.Component
-	aliases    map[string]map[string]pkg.Component
+	references map[string]api.Component
+	aliases    map[string]map[string]api.Component
 }
 
 func New(ctx Context) *Builder {
 	return &Builder{
 		context:    ctx,
-		references: make(map[string]pkg.Component),
-		aliases:    make(map[string]map[string]pkg.Component),
+		references: make(map[string]api.Component),
+		aliases:    make(map[string]map[string]api.Component),
 	}
 }
 
-func (instance *Builder) GetComponent(componentType string, alias string) pkg.Component {
+func (instance *Builder) GetComponent(componentType string, alias string) api.Component {
 	if alias != "" {
 		if components, exists := instance.aliases[componentType]; exists {
 			return components[alias]
@@ -33,10 +34,10 @@ func (instance *Builder) GetComponent(componentType string, alias string) pkg.Co
 	return instance.references[componentType]
 }
 
-func (instance *Builder) WithComponent(componentType string, ptr pkg.Component, alias string) error {
+func (instance *Builder) WithComponent(componentType string, ptr api.Component, alias string) error {
 	if alias != "" {
 		if _, hasValue := instance.aliases[componentType]; !hasValue {
-			instance.aliases[componentType] = make(map[string]pkg.Component)
+			instance.aliases[componentType] = make(map[string]api.Component)
 		}
 		if _, hasValue := instance.aliases[componentType][alias]; hasValue {
 			return fmt.Errorf("%s with alias %s cannot be defined more than once", componentType, alias)
@@ -92,7 +93,7 @@ func (instance *Builder) getValueFromExpression(key, expr string, cache map[stri
 	return v, nil
 }
 
-func (instance *Builder) getComponentOrElseThrow(componentType, componentId string) (pkg.Component, error) {
+func (instance *Builder) getComponentOrElseThrow(componentType, componentId string) (api.Component, error) {
 	components, hasValue := instance.aliases[componentType]
 	if !hasValue {
 		return nil, fmt.Errorf("component %s.%s has not been defined yet", componentType, componentId)
@@ -114,10 +115,10 @@ func (instance *Builder) GetWorkDirectory() string {
 	return ""
 }
 
-func (instance *Builder) GetHttpClient() pkg.HttpClient {
+func (instance *Builder) GetHttpClient() http.Client {
 	return instance.context.GetHttpClient()
 }
 
-func (instance *Builder) GetResourcesHttpClient() pkg.HttpClient {
+func (instance *Builder) GetResourcesHttpClient() http.Client {
 	return instance.context.GetResourcesHttpClient()
 }

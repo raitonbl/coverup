@@ -3,7 +3,7 @@ package pkg
 import (
 	"github.com/cucumber/godog"
 	"github.com/raitonbl/coverup/internal/context"
-	"github.com/raitonbl/coverup/pkg"
+	"github.com/raitonbl/coverup/pkg/api"
 	"io/fs"
 )
 
@@ -15,5 +15,5 @@ type ScenarioContext interface {
 	GetValue(value string) (any, error)
 	GerkhinContext() *godog.ScenarioContext
 	GetComponent(componentType, alias string) (any, error)
-	Register(componentType string, ptr pkg.Component, alias string) error
+	Register(componentType string, ptr api.Component, alias string) error
 }

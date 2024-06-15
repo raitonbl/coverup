@@ -9,18 +9,19 @@ import (
 const serverURLRegex = `(https?://[^\s]+)`
 const relativeURIRegex = `/([^/]+(?:/[^/]+)*)`
 const valueRegex = `\{\{\s*([a-zA-Z0-9_]+\.)*[a-zA-Z0-9_]+\s*\}\}`
-const httpRequestRegex = `\{\{\s*HttpRequest\.[a-zA-Z0-9_]+\s*\}\}`
+const httpRequestRegex = `\{\{\s*` + ComponentType + `\.[a-zA-Z0-9_]+\s*\}\}`
 const entityRegex = `\{\{\s*Entity\.[a-zA-Z0-9_]+\s*\}\}`
+const propertyRegex = `\{\{\s*Properties\.[a-zA-Z0-9_]+\s*\}\}`
 
 func On(ctx pkg.ScenarioContext) {
-	h := &HttpContext{
+	h := &Scenario{
 		ctx: ctx,
 	}
 	onRequest(h)
 	onResponse(h)
 }
 
-func onRequest(h *HttpContext) {
+func onRequest(h *Scenario) {
 	// Define Request
 	h.ctx.GerkhinContext().Given(`^(?i)a HttpRequest$`, h.WithRequest)
 	h.ctx.GerkhinContext().Given(`(?i)^a HttpRequest named (.+)$`, h.WithRequestWhenAlias)
@@ -35,6 +36,7 @@ func onRequest(h *HttpContext) {
 	// Server URL & Path
 	setRequestLinePart(h, `path is http://(.+)$`, h.WithHttpPath)
 	setRequestLinePart(h, `path is https://(.+)$`, h.WithHttpsPath)
+
 	setRequestLinePart(h, fmt.Sprintf(`path is %s$`, valueRegex), h.WithPath)
 	setRequestLinePart(h, fmt.Sprintf(`path is %s$`, relativeURIRegex), h.WithPath)
 	setRequestLinePart(h, fmt.Sprintf(`server url is %s$`, serverURLRegex), h.WithServerURL)
@@ -43,8 +45,10 @@ func onRequest(h *HttpContext) {
 	setRequestLinePart(h, `body is file://(.+)$`, h.WithBodyFileURI)
 	//Form
 	setRequestLinePart(h, `form enctype is ([^"]*)$`, h.WithFormEncType)
+
 	setRequestLinePart(h, `form attribute "([a-zA-Z_]+)" is "([^"]+)"$`, h.WithFormAttribute)
 	setRequestLinePart(h, fmt.Sprintf(`form attribute "([a-zA-Z_]+)" is "%s"$`, valueRegex), h.WithFormAttribute)
+
 	setRequestLinePart(h, `form attribute "([a-zA-Z_]+)" is file://(.+)$`, h.WithFormFile)
 	setRequestLinePart(h, fmt.Sprintf(`form attribute "([a-zA-Z_]+)" is file://%s`, valueRegex), h.WithFormFile)
 	// Submit
@@ -60,20 +64,20 @@ func onRequest(h *HttpContext) {
 	h.ctx.GerkhinContext().When(fmt.Sprintf("^(?i)the %s submits %s", entityRegex, httpRequestRegex), h.SubmitNamedHttpRequestOnBehalfOfEntity)
 }
 
-func setRequestLinePart(h *HttpContext, expr string, f any) {
+func setRequestLinePart(h *Scenario, expr string, f any) {
 	h.ctx.GerkhinContext().Step(`^(?i)`+expr, f)
 	h.ctx.GerkhinContext().Step(`^(?i)the `+expr, f)
 	h.ctx.GerkhinContext().Step(`^(?i)the `+strings.ToUpper(string(expr[0]))+expr[1:], f)
 }
 
-func onResponse(h *HttpContext) {
+func onResponse(h *Scenario) {
 	onResponseHeaders(h)
 	onResponseStatusCode(h)
 	onResponseBodySchemaValidation(h)
 	onResponseBody(h)
 }
 
-func onResponseStatusCode(h *HttpContext) {
+func onResponseStatusCode(h *Scenario) {
 	h.ctx.GerkhinContext().Then(`^(?i)response status code is (\d+)$`, h.AssertResponseStatusCode)
 	h.ctx.GerkhinContext().Then(`^(?i)the response status code is (\d+)$`, h.AssertResponseStatusCode)
 	h.ctx.GerkhinContext().Then(`^(?i)the Response status code is (\d+)$`, h.AssertResponseStatusCode)
@@ -82,7 +86,7 @@ func onResponseStatusCode(h *HttpContext) {
 	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response status code %s is (\d+)$`, httpRequestRegex), h.AssertNamedHttpRequestResponseStatusCode)
 }
 
-func onResponseHeaders(h *HttpContext) {
+func onResponseHeaders(h *Scenario) {
 	h.ctx.GerkhinContext().Then(`^(?i)response headers are:$`, h.AssertResponseExactHeaders)
 	h.ctx.GerkhinContext().Then(`^(?i)the response headers are:$`, h.AssertResponseExactHeaders)
 	h.ctx.GerkhinContext().Then(`^(?i)the Response headers are:$`, h.AssertResponseExactHeaders)
@@ -109,7 +113,7 @@ func onResponseHeaders(h *HttpContext) {
 	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response header for %s is "([^"]*)"$`, httpRequestRegex), h.AssertNamedHttpRequestResponseHeader)
 }
 
-func onResponseBody(h *HttpContext) {
+func onResponseBody(h *Scenario) {
 	params := map[string]HandlerFactory{
 		":":            newResponseBodyIsEqualToHandler,
 		" file://(.*)": newResponseBodyIsEqualToFileHandler,
@@ -156,7 +160,7 @@ func onResponseBody(h *HttpContext) {
 	}
 }
 
-func onResponseBodySchemaValidation(h *HttpContext) {
+func onResponseBodySchemaValidation(h *Scenario) {
 	schemes := []URIScheme{
 		fileUriScheme,
 		httpUriScheme,
@@ -177,7 +181,7 @@ func onResponseBodySchemaValidation(h *HttpContext) {
 	}
 }
 
-func onJsonPathCompareTo(h *HttpContext) {
+func onJsonPathCompareTo(h *Scenario) {
 	doOnJsonPathCompareTo(h, []string{"is", "isn't"}, map[string]HandlerFactory{
 		`"([^"]*)"`:       newJsonPathEqualsTo,
 		valueRegex:        newJsonPathEqualsTo,
@@ -195,7 +199,7 @@ func onJsonPathCompareTo(h *HttpContext) {
 	doOnJsonPathStringOperation(h, []string{"", "doesn't"})
 }
 
-func doOnJsonPathStringOperation(h *HttpContext, verbs []string) {
+func doOnJsonPathStringOperation(h *Scenario, verbs []string) {
 	patterns := map[string]HandlerFactory{
 		"contains":        newJsonPathContainsHandler,
 		"ends with":       newJsonPathEndsWithHandler,
@@ -229,7 +233,7 @@ func doOnJsonPathStringOperation(h *HttpContext, verbs []string) {
 	}
 }
 
-func doOnJsonPathCompareTo(h *HttpContext, verbs []string, patterns map[string]HandlerFactory, opts []HandlerOpts) {
+func doOnJsonPathCompareTo(h *Scenario, verbs []string, patterns map[string]HandlerFactory, opts []HandlerOpts) {
 	for pattern, factory := range patterns {
 		for _, verb := range verbs {
 			for _, opt := range opts {
@@ -250,11 +254,11 @@ func doOnJsonPathCompareTo(h *HttpContext, verbs []string, patterns map[string]H
 	}
 }
 
-func setJsonPathStepDefinition(h *HttpContext, expr string, f any, namedF any) {
+func setJsonPathStepDefinition(h *Scenario, expr string, f any, namedF any) {
 	setRequestBodyStepDefinition(h, fmt.Sprintf(`\$(\S+) %s`, expr), f, namedF)
 }
 
-func setRequestBodyStepDefinition(h *HttpContext, expr string, f any, namedF any) {
+func setRequestBodyStepDefinition(h *Scenario, expr string, f any, namedF any) {
 	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)response body %s$`, expr), f)
 	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the response body %s$`, expr), f)
 	h.ctx.GerkhinContext().Then(fmt.Sprintf(`^(?i)the Response body %s$`, expr), f)
