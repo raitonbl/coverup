@@ -56,7 +56,7 @@ func (instance *PathOperations) enabledSupportTo(ctx api.StepDefinitionContext, 
 		for _, alias := range aliases {
 			for _, arg := range args {
 				numberOfOptions := 1
-				supportsIgnoreCase := arg == anyNumber || arg == resolvableStringRegex || arg == valueRegex
+				supportsIgnoreCase := arg == anyStringRegex || arg == resolvableStringRegex || arg == valueRegex
 				if supportsIgnoreCase {
 					numberOfOptions = 2
 				}
@@ -71,6 +71,10 @@ func (instance *PathOperations) enabledSupportTo(ctx api.StepDefinitionContext, 
 					}
 					for _, p := range phrases {
 						phrase := p
+						if isIgnoreCase {
+							phrase += ", ignoring case"
+						}
+						phrase += "$"
 						options := FactoryOpts[PathOperationSettings]{
 							Settings: &PathOperationSettings{
 								ValueRegexp: arg,
@@ -79,9 +83,6 @@ func (instance *PathOperations) enabledSupportTo(ctx api.StepDefinitionContext, 
 							AssertTrue:                  verb == verbs[0],
 							AssertAlias:                 alias == aliases[1],
 							ResolveValueBeforeAssertion: arg != anyNumber && arg != boolRegex,
-						}
-						if isIgnoreCase {
-							phrase += ", ignoring case"
 						}
 						step.Options = append(step.Options, api.Option{
 							Regexp:         phrase,
