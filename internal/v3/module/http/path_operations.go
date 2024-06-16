@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/raitonbl/coverup/pkg/api"
 	"github.com/raitonbl/coverup/pkg/checks"
+	"regexp"
 	"strings"
 )
 
@@ -13,6 +14,8 @@ const (
 	anyNumber             = `(-?\d+(\.\d+)?)`
 	resolvableStringRegex = `"` + valueRegex + `"`
 )
+
+var regexpCache = make(map[string]*regexp.Regexp)
 
 type PathOperationSettings struct {
 	IgnoreCase  bool
@@ -32,11 +35,16 @@ func (instance *PathOperations) New(ctx api.StepDefinitionContext) {
 	instance.enabledEndsWithSupport(ctx)
 	instance.enabledStartsWithSupport(ctx)
 	instance.enabledContainsSupport(ctx)
-	// matches pattern
+	instance.enabledRegexSupport(ctx)
 	// is lesser
 	// is greater
 	// is lesser or equal to
 	// is greater or equal to
+	// is part of
+}
+
+func (instance *PathOperations) enabledRegexSupport(ctx api.StepDefinitionContext) {
+	instance.enabledSupportTo(ctx, "match pattern", true, instance.regexAssertionFactory)
 }
 
 func (instance *PathOperations) enabledEqualsToSupport(ctx api.StepDefinitionContext) {
@@ -118,6 +126,22 @@ func (instance *PathOperations) endsWithAssertionFactory(options FactoryOpts[Pat
 
 func (instance *PathOperations) containsAssertionFactory(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
 	return instance.stringOperationAssertionFactory(options, strings.Contains)
+}
+
+func (instance *PathOperations) regexAssertionFactory(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
+	return instance.stringOperationAssertionFactory(options, func(value string, pattern string) bool {
+		r, hasValue := regexpCache[pattern]
+		if !hasValue {
+			c, err := regexp.Compile(pattern)
+			if err != nil {
+				// TODO: LOG
+				return false
+			}
+			r = c
+			regexpCache[pattern] = r
+		}
+		return r.MatchString(value)
+	})
 }
 
 func (instance *PathOperations) stringOperationAssertionFactory(options FactoryOpts[PathOperationSettings], predicate func(string, string) bool) api.HandlerFactory {

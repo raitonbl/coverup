@@ -42,6 +42,8 @@ func TestV3Api(m *testing.T) {
 		`http response header content-type should end with "json"`,
 		`http response header content-type should start with "application"`,
 		`http response header content-type should contain "/"`,
+		`http response header content-type should match pattern "application/*"`,
+		`http response header content-type shouldn't match pattern "*/xml"`,
 	}
 	for _, assertion := range opts {
 		name := assertion
