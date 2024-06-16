@@ -5,6 +5,11 @@ import (
 )
 
 func OnV3(ctx api.StepDefinitionContext) {
-	g := GivenHttpRequestStepFactory{}
-	g.New(ctx)
+	arr := []api.StepFactory{
+		&GivenHttpRequestStepFactory{},
+		&ThenHttpResponseStepFactory{},
+	}
+	for _, each := range arr {
+		each.New(ctx)
+	}
 }

@@ -138,7 +138,7 @@ func (instance *GivenHttpRequestStepFactory) doSubmitHttpRequest(c api.ScenarioC
 	src.response = &Response{
 		body:       binary,
 		headers:    headers,
-		statusCode: res.StatusCode,
+		statusCode: float64(res.StatusCode),
 		pathCache:  make(map[string]any),
 	}
 	return nil

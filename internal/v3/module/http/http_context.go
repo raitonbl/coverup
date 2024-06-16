@@ -389,9 +389,9 @@ func (instance *Scenario) AssertNamedHttpRequestResponseStatusCode(alias string,
 	return instance.onNamedResponse(alias, func(_ *Request, response *Response) error {
 		if response.statusCode != float64(statusCode) {
 			if alias == "" {
-				return fmt.Errorf("%s.StatusCode should be %d but instead got %d", ComponentType, statusCode, response.statusCode)
+				return fmt.Errorf("%s.StatusCode should be %d but instead got %f", ComponentType, statusCode, response.statusCode)
 			}
-			return fmt.Errorf(`%s["%s"].StatusCode should be %d but instead got %d`, ComponentType, alias, statusCode, response.statusCode)
+			return fmt.Errorf(`%s["%s"].StatusCode should be %d but instead got %f`, ComponentType, alias, statusCode, response.statusCode)
 		}
 		return nil
 	})
