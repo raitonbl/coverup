@@ -40,3 +40,19 @@ func createRequestLinePart(expr string) []string {
 		//fmt.Sprintf(`^(?i)%s the `, strings.ToUpper(string(expr[0]))+expr[1:]),
 	}
 }
+
+func createResponseLinePart(expr string) []string {
+	return []string{
+		fmt.Sprintf(`^http response %s`, expr),
+		fmt.Sprintf(`^(?i)the http response %s`, expr),
+		//fmt.Sprintf(`^(?i)%s the `, strings.ToUpper(string(expr[0]))+expr[1:]),
+	}
+}
+
+func createAliasedResponseLinePart(expr string) []string {
+	return []string{
+		fmt.Sprintf(`^%s http response %s`, httpRequestRegex, expr),
+		fmt.Sprintf(`^(?i)the %s http response %s`, httpRequestRegex, expr),
+		//fmt.Sprintf(`^(?i)%s the `, strings.ToUpper(string(expr[0]))+expr[1:]),
+	}
+}
