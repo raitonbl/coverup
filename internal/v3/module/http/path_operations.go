@@ -41,6 +41,7 @@ func (instance *PathOperations) New(ctx api.StepDefinitionContext) {
 	// is lesser or equal to
 	// is greater or equal to
 	// is part of
+	// is contained within
 }
 
 func (instance *PathOperations) enabledRegexSupport(ctx api.StepDefinitionContext) {
