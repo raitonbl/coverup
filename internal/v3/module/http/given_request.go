@@ -135,7 +135,7 @@ func (instance *GivenHttpRequestStepFactory) doSubmitHttpRequest(c api.ScenarioC
 	for k, v := range res.Header {
 		headers[k] = strings.Join(v, ",")
 	}
-	src.response = &HttpResponse{
+	src.response = &Response{
 		body:       binary,
 		headers:    headers,
 		statusCode: res.StatusCode,
@@ -495,7 +495,7 @@ func (instance *GivenHttpRequestStepFactory) createNamedHttpRequest() api.Handle
 }
 
 func (instance *GivenHttpRequestStepFactory) doGivenHttpRequest(c api.ScenarioContext, alias string) error {
-	return c.AddGivenComponent(ComponentType, &HttpRequest{
+	return c.AddGivenComponent(ComponentType, &Request{
 		headers: make(map[string]string),
 	}, alias)
 }
@@ -561,12 +561,12 @@ func (instance *GivenHttpRequestStepFactory) givenHeaders(ctx api.StepDefinition
 	ctx.Given(step)
 }
 
-func (instance *GivenHttpRequestStepFactory) getHttpRequest(c api.ScenarioContext, alias string) (*HttpRequest, error) {
+func (instance *GivenHttpRequestStepFactory) getHttpRequest(c api.ScenarioContext, alias string) (*Request, error) {
 	component, err := c.GetGivenComponent(ComponentType, alias)
 	if err != nil {
 		return nil, err
 	}
-	req, isHttpRequest := component.(*HttpRequest)
+	req, isHttpRequest := component.(*Request)
 	if !isHttpRequest {
 		return nil, fmt.Errorf("cannot retrieve %s from context", ComponentType)
 	}
@@ -576,7 +576,7 @@ func (instance *GivenHttpRequestStepFactory) getHttpRequest(c api.ScenarioContex
 	return req, nil
 }
 
-func (instance *GivenHttpRequestStepFactory) doGivenHeader(c api.ScenarioContext, req *HttpRequest, key string, value string) error {
+func (instance *GivenHttpRequestStepFactory) doGivenHeader(c api.ScenarioContext, req *Request, key string, value string) error {
 	if req.headers == nil {
 		req.headers = make(map[string]string)
 	}
@@ -588,7 +588,7 @@ func (instance *GivenHttpRequestStepFactory) doGivenHeader(c api.ScenarioContext
 	return nil
 }
 
-func (instance *GivenHttpRequestStepFactory) doGivenFormAttribute(c api.ScenarioContext, req *HttpRequest, name, value string, mightBeFileURI bool) error {
+func (instance *GivenHttpRequestStepFactory) doGivenFormAttribute(c api.ScenarioContext, req *Request, name, value string, mightBeFileURI bool) error {
 	valueOf, err := c.Resolve(value)
 	if err != nil {
 		return err

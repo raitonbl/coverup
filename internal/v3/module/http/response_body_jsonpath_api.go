@@ -34,7 +34,7 @@ func newJsonPathIsDateTime(instance *Scenario, opts HandlerOpts) any {
 
 func newJsonPathIsTemporal(instance *Scenario, opts HandlerOpts, definedType string, regex *regexp.Regexp) any {
 	f := func(expr, alias string) error {
-		return instance.onNamedHttpRequestResponseBodyPath(expr, alias, func(_ *HttpRequest, res *HttpResponse, v any) error {
+		return instance.onNamedHttpRequestResponseBodyPath(expr, alias, func(_ *Request, res *Response, v any) error {
 			value, isString := v.(string)
 			if !isString {
 				return fmt.Errorf("$%s should be a string but got %v", expr, v)
@@ -96,7 +96,7 @@ func newJsonPathEqualsToBooleanHandler(instance *Scenario, opts HandlerOpts) any
 
 func newJsonPathEqualsToAnyHandler(instance *Scenario, opts HandlerOpts) any {
 	f := func(expr, alias string, compareTo any) error {
-		return instance.onNamedHttpRequestResponseBodyPath(expr, alias, func(_ *HttpRequest, response *HttpResponse, value any) error {
+		return instance.onNamedHttpRequestResponseBodyPath(expr, alias, func(_ *Request, response *Response, value any) error {
 			if (value == compareTo) == opts.isAffirmationExpected {
 				return nil
 			}
@@ -154,7 +154,7 @@ func newStringOperationJsonPathHandler(instance *Scenario, operation string, opt
 }
 
 func doOnStringOperation(instance *Scenario, operation string, opts HandlerOpts, alias, expr, c string, predicate func(string, string) bool) error {
-	return execOnJsonPath(instance, alias, expr, func(_ *HttpRequest, res *HttpResponse, value any) error {
+	return execOnJsonPath(instance, alias, expr, func(_ *Request, res *Response, value any) error {
 		if value == nil {
 			if alias == "" {
 				return fmt.Errorf(`$%s mustn't be undefined`, expr)

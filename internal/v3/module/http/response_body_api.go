@@ -35,8 +35,8 @@ func newResponseBodyIsEqualToFileHandler(instance *Scenario, opts HandlerOpts) a
 	return f
 }
 
-func execOnResponseBody(instance *Scenario, alias string, f func(*HttpRequest, *HttpResponse) error) error {
-	return instance.onNamedHttpRequest(alias, func(req *HttpRequest) error {
+func execOnResponseBody(instance *Scenario, alias string, f func(*Request, *Response) error) error {
+	return instance.onNamedHttpRequest(alias, func(req *Request) error {
 		if req.response == nil {
 			if alias == "" {
 				return fmt.Errorf(`%s needs to be submitted before making assertions`, ComponentType)
@@ -49,7 +49,7 @@ func execOnResponseBody(instance *Scenario, alias string, f func(*HttpRequest, *
 }
 
 func execOnResponseBodyEqualsToHandler(instance *Scenario, opts HandlerOpts, alias string, binary []byte) error {
-	return execOnResponseBody(instance, alias, func(req *HttpRequest, res *HttpResponse) error {
+	return execOnResponseBody(instance, alias, func(req *Request, res *Response) error {
 		var predicate func() (bool, error)
 		if res.headers["content-type"] == "application/json" {
 			predicate = func() (bool, error) {

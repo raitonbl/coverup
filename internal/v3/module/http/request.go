@@ -9,17 +9,17 @@ import (
 
 var jsonPathCache = make(map[string]*jsonpath.JSONPath)
 
-type HttpRequest struct {
+type Request struct {
 	form      *Form
 	path      string
 	method    string
 	serverURL string
 	body      []byte
-	response  *HttpResponse
+	response  *Response
 	headers   map[string]string
 }
 
-func (instance *HttpRequest) GetPathValue(x string) (any, error) {
+func (instance *Request) GetPathValue(x string) (any, error) {
 	panic("implement me")
 }
 
@@ -32,19 +32,19 @@ func (instance *Form) GetPathValue(x string) (any, error) {
 	panic("implement me")
 }
 
-type HttpResponse struct {
+type Response struct {
 	body       []byte
 	headers    map[string]string
-	statusCode int
+	statusCode float64
 	pathCache  map[string]any
 	jsonPath   *JsonPathContext
 }
 
-func (instance *HttpResponse) GetPathValue(x string) (any, error) {
+func (instance *Response) GetPathValue(x string) (any, error) {
 	panic("implement me")
 }
 
-func (instance *HttpResponse) JSONPath(expr string) (any, error) {
+func (instance *Response) JSONPath(expr string) (any, error) {
 	if instance.jsonPath == nil {
 		instance.jsonPath = &JsonPathContext{
 			binary: instance.body,

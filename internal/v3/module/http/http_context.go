@@ -29,41 +29,41 @@ func (instance *Scenario) WithRequest() error {
 }
 
 func (instance *Scenario) WithRequestWhenAlias(alias string) error {
-	return instance.ctx.Register(ComponentType, &HttpRequest{
+	return instance.ctx.Register(ComponentType, &Request{
 		headers: make(map[string]string),
 	}, alias)
 }
 
 // Deprecated
-func (instance *Scenario) onHttpRequest(f func(*HttpRequest) error) error {
+func (instance *Scenario) onHttpRequest(f func(*Request) error) error {
 	return instance.onNamedHttpRequest("", f)
 }
 
 // Deprecated
-func (instance *Scenario) onNamedHttpRequest(alias string, f func(*HttpRequest) error) error {
+func (instance *Scenario) onNamedHttpRequest(alias string, f func(*Request) error) error {
 	valueOf, err := instance.ctx.GetComponent(ComponentType, alias)
 	if err != nil {
 		return err
 	}
-	if r, isHttpRequest := valueOf.(*HttpRequest); isHttpRequest {
+	if r, isHttpRequest := valueOf.(*Request); isHttpRequest {
 		return f(r)
 	}
 	return fmt.Errorf("please define %s before using it", ComponentType)
 }
 
-func (instance *Scenario) getRequest(alias string) (*HttpRequest, error) {
+func (instance *Scenario) getRequest(alias string) (*Request, error) {
 	valueOf, err := instance.ctx.GetComponent(ComponentType, alias)
 	if err != nil {
 		return nil, err
 	}
-	if r, isHttpRequest := valueOf.(*HttpRequest); isHttpRequest {
+	if r, isHttpRequest := valueOf.(*Request); isHttpRequest {
 		return r, nil
 	}
 	return nil, fmt.Errorf("please define %s before using it", ComponentType)
 }
 
 func (instance *Scenario) WithHeaders(table *godog.Table) error {
-	return instance.onHttpRequest(func(req *HttpRequest) error {
+	return instance.onHttpRequest(func(req *Request) error {
 		if req.headers == nil {
 			req.headers = make(map[string]string)
 		}
@@ -83,12 +83,12 @@ func (instance *Scenario) WithHeaders(table *godog.Table) error {
 }
 
 func (instance *Scenario) WithHeader(name, value string) error {
-	return instance.onHttpRequest(func(req *HttpRequest) error {
+	return instance.onHttpRequest(func(req *Request) error {
 		return instance.withHeader(req, name, value)
 	})
 }
 
-func (instance *Scenario) withHeader(req *HttpRequest, name, value string) error {
+func (instance *Scenario) withHeader(req *Request, name, value string) error {
 	if req.headers == nil {
 		req.headers = make(map[string]string)
 	}
@@ -101,7 +101,7 @@ func (instance *Scenario) withHeader(req *HttpRequest, name, value string) error
 }
 
 func (instance *Scenario) WithMethod(method string) error {
-	return instance.onHttpRequest(func(req *HttpRequest) error {
+	return instance.onHttpRequest(func(req *Request) error {
 		switch method {
 		case "OPTIONS":
 			return instance.withMethod(req, method)
@@ -123,13 +123,13 @@ func (instance *Scenario) WithMethod(method string) error {
 	})
 }
 
-func (instance *Scenario) withMethod(req *HttpRequest, method string) error {
+func (instance *Scenario) withMethod(req *Request, method string) error {
 	req.method = method
 	return nil
 }
 
 func (instance *Scenario) WithPath(path string) error {
-	return instance.onHttpRequest(func(req *HttpRequest) error {
+	return instance.onHttpRequest(func(req *Request) error {
 		valueOf, err := instance.ctx.GetValue(path)
 		if err != nil {
 			return err
@@ -140,7 +140,7 @@ func (instance *Scenario) WithPath(path string) error {
 }
 
 func (instance *Scenario) WithHttpPath(url string) error {
-	return instance.onHttpRequest(func(req *HttpRequest) error {
+	return instance.onHttpRequest(func(req *Request) error {
 		valueOf, err := instance.ctx.GetValue(url)
 		if err != nil {
 			return err
@@ -152,7 +152,7 @@ func (instance *Scenario) WithHttpPath(url string) error {
 }
 
 func (instance *Scenario) WithHttpsPath(url string) error {
-	return instance.onHttpRequest(func(req *HttpRequest) error {
+	return instance.onHttpRequest(func(req *Request) error {
 		valueOf, err := instance.ctx.GetValue(url)
 		if err != nil {
 			return err
@@ -164,7 +164,7 @@ func (instance *Scenario) WithHttpsPath(url string) error {
 }
 
 func (instance *Scenario) WithServerURL(url string) error {
-	return instance.onHttpRequest(func(req *HttpRequest) error {
+	return instance.onHttpRequest(func(req *Request) error {
 		valueOf, err := instance.ctx.GetValue(url)
 		if err != nil {
 			return err
@@ -182,7 +182,7 @@ func (instance *Scenario) WithBody(body *godog.DocString) error {
 }
 
 func (instance *Scenario) withBody(s func() ([]byte, error)) error {
-	return instance.onHttpRequest(func(req *HttpRequest) error {
+	return instance.onHttpRequest(func(req *Request) error {
 		binary, err := s()
 		if err != nil {
 			return err
@@ -253,7 +253,7 @@ func (instance *Scenario) onFormAttribute(name string, f func() (any, error)) er
 }
 
 func (instance *Scenario) onForm(s func(*Form) error) error {
-	return instance.onHttpRequest(func(req *HttpRequest) error {
+	return instance.onHttpRequest(func(req *Request) error {
 		form := req.form
 		if form == nil {
 			req.form = &Form{
@@ -267,12 +267,12 @@ func (instance *Scenario) onForm(s func(*Form) error) error {
 	})
 }
 
-func (instance *Scenario) get(alias string) (*HttpRequest, error) {
+func (instance *Scenario) get(alias string) (*Request, error) {
 	valueOf, err := instance.ctx.GetComponent(ComponentType, alias)
 	if err != nil {
 		return nil, err
 	}
-	req, isHttpRequest := valueOf.(*HttpRequest)
+	req, isHttpRequest := valueOf.(*Request)
 	if !isHttpRequest {
 		if alias == "" {
 			return nil, fmt.Errorf(`%s is undefined and needs to be defined before referencing it`, ComponentType)
@@ -299,7 +299,7 @@ func (instance *Scenario) SubmitNamedHttpRequest(alias string) error {
 
 // Deprecated
 func (instance *Scenario) SubmitNamedHttpRequestOnBehalfOfEntity(alias, id string) error {
-	return instance.onNamedHttpRequest(alias, func(req *HttpRequest) error {
+	return instance.onNamedHttpRequest(alias, func(req *Request) error {
 		if id != "" {
 			panic("not implemented")
 		}
@@ -311,7 +311,7 @@ func (instance *Scenario) SubmitNamedHttpRequestOnBehalfOfEntity(alias, id strin
 }
 
 // Deprecated
-func (instance *Scenario) doSubmitHttpRequest(src *HttpRequest) error {
+func (instance *Scenario) doSubmitHttpRequest(src *Request) error {
 	var body io.Reader
 	if src.body != nil {
 		body = bytes.NewReader(src.body)
@@ -343,18 +343,18 @@ func (instance *Scenario) doSubmitHttpRequest(src *HttpRequest) error {
 	for k, v := range res.Header {
 		headers[k] = strings.Join(v, ",")
 	}
-	src.response = &HttpResponse{
+	src.response = &Response{
 		body:       binary,
 		headers:    headers,
-		statusCode: res.StatusCode,
+		statusCode: float64(res.StatusCode),
 		pathCache:  make(map[string]any),
 	}
 	return nil
 }
 
 // Deprecated
-func (instance *Scenario) onNamedResponse(alias string, f func(*HttpRequest, *HttpResponse) error) error {
-	return instance.onNamedHttpRequest(alias, func(req *HttpRequest) error {
+func (instance *Scenario) onNamedResponse(alias string, f func(*Request, *Response) error) error {
+	return instance.onNamedHttpRequest(alias, func(req *Request) error {
 		if req.response == nil {
 			if alias == "" {
 				return fmt.Errorf(`%s needs to be submitted before making assertions`, ComponentType)
@@ -366,7 +366,7 @@ func (instance *Scenario) onNamedResponse(alias string, f func(*HttpRequest, *Ht
 	})
 }
 
-func (instance *Scenario) getResponse(alias string) (*HttpResponse, error) {
+func (instance *Scenario) getResponse(alias string) (*Response, error) {
 	req, err := instance.getRequest(alias)
 	if err != nil {
 		return nil, err
@@ -386,8 +386,8 @@ func (instance *Scenario) AssertResponseStatusCode(statusCode int) error {
 }
 
 func (instance *Scenario) AssertNamedHttpRequestResponseStatusCode(alias string, statusCode int) error {
-	return instance.onNamedResponse(alias, func(_ *HttpRequest, response *HttpResponse) error {
-		if response.statusCode != statusCode {
+	return instance.onNamedResponse(alias, func(_ *Request, response *Response) error {
+		if response.statusCode != float64(statusCode) {
 			if alias == "" {
 				return fmt.Errorf("%s.StatusCode should be %d but instead got %d", ComponentType, statusCode, response.statusCode)
 			}
@@ -434,8 +434,8 @@ func (instance *Scenario) AssertResponseIsValidAgainstSchema(file string) error 
 }
 
 // Deprecated
-func (instance *Scenario) onNamedHttpRequestResponseWithJsonContentType(alias string, f func(*HttpRequest, *HttpResponse) error) error {
-	return instance.onNamedResponse(alias, func(req *HttpRequest, res *HttpResponse) error {
+func (instance *Scenario) onNamedHttpRequestResponseWithJsonContentType(alias string, f func(*Request, *Response) error) error {
+	return instance.onNamedResponse(alias, func(req *Request, res *Response) error {
 		contentType, hasValue := res.headers["content-type"]
 		if !hasValue {
 			if alias == "" {
@@ -453,7 +453,7 @@ func (instance *Scenario) onNamedHttpRequestResponseWithJsonContentType(alias st
 	})
 }
 
-func (instance *Scenario) getResponseWithJsonContentType(alias string) (*HttpResponse, error) {
+func (instance *Scenario) getResponseWithJsonContentType(alias string) (*Response, error) {
 	res, err := instance.getResponse(alias)
 	if err != nil {
 		return nil, err
@@ -500,7 +500,7 @@ func (instance *Scenario) getResponseValueFromExpression(alias, t string) (any, 
 }
 
 func (instance *Scenario) AssertNamedHttpRequestResponseIsValidAgainstSchema(alias, value string) error {
-	return instance.onNamedHttpRequestResponseWithJsonContentType(alias, func(_ *HttpRequest, response *HttpResponse) error {
+	return instance.onNamedHttpRequestResponseWithJsonContentType(alias, func(_ *Request, response *Response) error {
 		if instance.schemas == nil {
 			instance.schemas = make(map[string]any)
 		}
@@ -531,8 +531,8 @@ func (instance *Scenario) AssertNamedHttpRequestResponseIsValidAgainstSchema(ali
 	})
 }
 
-func (instance *Scenario) onNamedHttpRequestResponseBodyPath(t, alias string, f func(*HttpRequest, *HttpResponse, any) error) error {
-	return instance.onNamedHttpRequestResponseWithJsonContentType(alias, func(req *HttpRequest, res *HttpResponse) error {
+func (instance *Scenario) onNamedHttpRequestResponseBodyPath(t, alias string, f func(*Request, *Response, any) error) error {
+	return instance.onNamedHttpRequestResponseWithJsonContentType(alias, func(req *Request, res *Response) error {
 		expr := t
 		if strings.HasPrefix(expr, ".") {
 			expr = expr[1:]
