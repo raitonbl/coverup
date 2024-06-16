@@ -31,7 +31,7 @@ func (instance *ThenHttpResponseStepFactory) enableHeaderComparisonStepSupport(c
 		Line:                 "header",
 		PhraseFactory:        createResponseLinePart,
 		AliasedPhraseFactory: createAliasedResponseLinePart,
-		GetValue: func(res *Response, expr string) (any, error) {
+		ExtractFromResponse: func(res *Response, expr string) (any, error) {
 			return res.headers[expr], nil
 		},
 	}
