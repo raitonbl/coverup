@@ -22,6 +22,19 @@ func TestV3Api(m *testing.T) {
 		`http response headers is:
 			| content-type 	  | application/json 															|
 			| x-amzn-trace-id | Root=1-5f84c3a3-91f49ffb0a2e26a3a3e58d0c; Parent=36b815b057b745d6; Sampled=1 |`,
+		`http response headers doesn't contain:
+			| content-type | application/xml |`,
+		`http response headers isn't:
+			| content-type 	  | application/problem+json 													|
+			| x-amzn-trace-id | Root=1-5f84c3a3-91f49ffb0a2e26a3a3e58d0c; Parent=36b815b057b745d6; Sampled=1 |`,
+		`http response body is:
+		"""
+			` + string(readProductFromFile(id)) + `
+		"""`,
+		`http response body is file://requests/product.json`,
+		`http response body respects json schema file://schemas/product.json`,
+		`http response body respects json schema http://localhost:8080/schemas/product.json`,
+		`http response body respects json schema https://localhost:8443/schemas/product.json`,
 	}
 	for _, assertion := range opts {
 		name := assertion

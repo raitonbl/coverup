@@ -333,7 +333,7 @@ func (instance *ThenHttpResponseStepFactory) jsonSchemaAssertionFactory(scheme U
 }
 
 func (instance *ThenHttpResponseStepFactory) createThenBodyCompliesWithJsonSchema(c api.ScenarioContext, scheme URIScheme, opts FactoryOpts[any]) any {
-	return func(alias, value string) error {
+	f := func(alias, value string) error {
 		res, err := instance.getHttpResponse(c, alias)
 		if err != nil {
 			return err
@@ -389,6 +389,12 @@ func (instance *ThenHttpResponseStepFactory) createThenBodyCompliesWithJsonSchem
 		}
 		return fmt.Errorf("schema respects the schema %s://%s when it shouldn't", scheme, value)
 	}
+	if !opts.AssertAlias {
+		return func(value string) error {
+			return f("", value)
+		}
+	}
+	return f
 }
 
 func (instance *ThenHttpResponseStepFactory) fetchContentFromURI(c api.ScenarioContext, scheme URIScheme, value string) ([]byte, error) {
