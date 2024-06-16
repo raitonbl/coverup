@@ -15,16 +15,16 @@ import (
 func TestV3Api(m *testing.T) {
 	id := "27258303-9ebc-4b84-a17e-f886161ab2f5"
 	opts := []string{
-		"http response status code is 200",
-		"http response status code isn't 201",
-		`http response headers contains:
+		"http response status code should be 200",
+		"http response status code shouldn't be 201",
+		`http response headers should contain:
 			| content-type | application/json |`,
-		`http response headers is:
+		`http response headers should be:
 			| content-type 	  | application/json 															|
 			| x-amzn-trace-id | Root=1-5f84c3a3-91f49ffb0a2e26a3a3e58d0c; Parent=36b815b057b745d6; Sampled=1 |`,
-		`http response headers doesn't contain:
+		`http response headers shouldn't contain:
 			| content-type | application/xml |`,
-		`http response headers isn't:
+		`http response headers shouldn't be:
 			| content-type 	  | application/problem+json 													|
 			| x-amzn-trace-id | Root=1-5f84c3a3-91f49ffb0a2e26a3a3e58d0c; Parent=36b815b057b745d6; Sampled=1 |`,
 		`http response body is:
@@ -35,8 +35,10 @@ func TestV3Api(m *testing.T) {
 		`http response body respects json schema file://schemas/product.json`,
 		`http response body respects json schema http://localhost:8080/schemas/product.json`,
 		`http response body respects json schema https://localhost:8443/schemas/product.json`,
-		`http response header content-type is equal to "application/json"`,
-		`http response header content-type is not equal to "application/problem+json"`,
+		`http response header content-type should be equal to "application/json"`,
+		`http response header content-type shouldn't be equal to "application/problem+json"`,
+		`http response header content-type should be equal to "application/json", by ignoring case`,
+		`http response header content-type shouldn't be equal to "application/problem+json", by ignoring case`,
 	}
 	for _, assertion := range opts {
 		name := assertion

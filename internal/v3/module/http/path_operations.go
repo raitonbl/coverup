@@ -45,7 +45,7 @@ func (instance *PathOperations) enabledEqualsToSupport(ctx api.StepDefinitionCon
 }
 
 func (instance *PathOperations) enabledSupportTo(ctx api.StepDefinitionContext, operation string, f func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory) {
-	verbs := []string{"is", "is not"}
+	verbs := []string{"should be", "shouldn't be"}
 	aliases := []string{"", httpRequestRegex}
 	args := []string{anyStringRegex, resolvableStringRegex, valueRegex, anyNumber, boolRegex}
 	for _, verb := range verbs {
@@ -55,28 +55,33 @@ func (instance *PathOperations) enabledSupportTo(ctx api.StepDefinitionContext, 
 		}
 		for _, alias := range aliases {
 			for _, arg := range args {
-				var phrases []string
-				format := fmt.Sprintf(`%s %s %s %s to %s`, instance.Line, instance.ExpressionPattern, verb, operation, arg)
-				if alias == aliases[0] {
-					phrases = instance.PhraseFactory(format)
-				} else {
-					phrases = instance.AliasedPhraseFactory(format)
-				}
+				numberOfOptions := 1
 				supportsIgnoreCase := arg == anyNumber || arg == resolvableStringRegex || arg == valueRegex
-				for _, phrase := range phrases {
-					numberOfOptions := 1
-					if supportsIgnoreCase {
-						numberOfOptions = 2
+				if supportsIgnoreCase {
+					numberOfOptions = 2
+				}
+				for i := 0; i < numberOfOptions; i++ {
+					isIgnoreCase := i == 1
+					var phrases []string
+					format := fmt.Sprintf(`%s %s %s %s to %s`, instance.Line, instance.ExpressionPattern, verb, operation, arg)
+					if alias == aliases[0] {
+						phrases = instance.PhraseFactory(format)
+					} else {
+						phrases = instance.AliasedPhraseFactory(format)
 					}
-					for i := 0; i < numberOfOptions; i++ {
+					for _, p := range phrases {
+						phrase := p
 						options := FactoryOpts[PathOperationSettings]{
 							Settings: &PathOperationSettings{
 								ValueRegexp: arg,
-								IgnoreCase:  i == 1,
+								IgnoreCase:  isIgnoreCase,
 							},
 							AssertTrue:                  verb == verbs[0],
 							AssertAlias:                 alias == aliases[1],
 							ResolveValueBeforeAssertion: arg != anyNumber && arg != boolRegex,
+						}
+						if isIgnoreCase {
+							phrase += ", ignoring case"
 						}
 						step.Options = append(step.Options, api.Option{
 							Regexp:         phrase,

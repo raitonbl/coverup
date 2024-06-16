@@ -39,7 +39,7 @@ func (instance *ThenHttpResponseStepFactory) enableHeaderComparisonStepSupport(c
 }
 
 func (instance *ThenHttpResponseStepFactory) enableStatusCodeStepSupport(ctx api.StepDefinitionContext) {
-	verbs := []string{"is", "isn't"}
+	verbs := []string{"should be", "shouldn't be"}
 	for _, verb := range verbs {
 		step := api.StepDefinition{
 			Description: fmt.Sprintf("Asserts that a %s response status code %s equal to a specific HTTP status code", ComponentType, verb),
@@ -95,15 +95,15 @@ func (instance *ThenHttpResponseStepFactory) enableHeadersStepSupport(ctx api.St
 
 func (instance *ThenHttpResponseStepFactory) thenHeadersContains(ctx api.StepDefinitionContext) {
 	instance.defineHeaderAssertions(ctx, instance.headersContainsPredicate, [][]string{
-		{"contains", "has exact headers"},
-		{"doesn't contain", "doesn't have exact headers"},
+		{"should contain", "has exact headers"},
+		{"shouldn't contain", "doesn't have exact headers"},
 	})
 }
 
 func (instance *ThenHttpResponseStepFactory) thenHeadersEqualsTo(ctx api.StepDefinitionContext) {
 	instance.defineHeaderAssertions(ctx, instance.headersEqualPredicate, [][]string{
-		{"is", "has exact headers"},
-		{"isn't", "doesn't have exact headers"},
+		{"should be", "has exact headers"},
+		{"shouldn't be", "doesn't have exact headers"},
 	})
 }
 
