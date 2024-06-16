@@ -19,12 +19,26 @@ type ThenHttpResponseStepFactory struct {
 }
 
 func (instance *ThenHttpResponseStepFactory) New(ctx api.StepDefinitionContext) {
-	instance.thenHeaders(ctx)
-	instance.thenStatusCode(ctx)
-	instance.thenResponseBody(ctx)
+	instance.enableHeadersStepSupport(ctx)
+	instance.enableStatusCodeStepSupport(ctx)
+	instance.enableResponseBodyStepSupport(ctx)
+	instance.enableHeaderComparisonStepSupport(ctx)
 }
 
-func (instance *ThenHttpResponseStepFactory) thenStatusCode(ctx api.StepDefinitionContext) {
+func (instance *ThenHttpResponseStepFactory) enableHeaderComparisonStepSupport(ctx api.StepDefinitionContext) {
+	ops := PathOperations{
+		ExpressionPattern:    `(.*)`,
+		Line:                 "header",
+		PhraseFactory:        createResponseLinePart,
+		AliasedPhraseFactory: createAliasedResponseLinePart,
+		GetValue: func(res *Response, expr string) (any, error) {
+			return res.headers[expr], nil
+		},
+	}
+	ops.New(ctx)
+}
+
+func (instance *ThenHttpResponseStepFactory) enableStatusCodeStepSupport(ctx api.StepDefinitionContext) {
 	verbs := []string{"is", "isn't"}
 	for _, verb := range verbs {
 		step := api.StepDefinition{
@@ -57,7 +71,7 @@ func (instance *ThenHttpResponseStepFactory) statusCodeAssertionFactory(assertTr
 
 func (instance *ThenHttpResponseStepFactory) createStatusCodeAssertionHandler(c api.ScenarioContext, opts FactoryOpts[any]) any {
 	f := func(alias string, statusCode float64) error {
-		req, err := instance.getHttpResponse(c, alias)
+		req, err := getHttpResponse(c, alias)
 		if err != nil {
 			return err
 		}
@@ -74,7 +88,7 @@ func (instance *ThenHttpResponseStepFactory) createStatusCodeAssertionHandler(c 
 	return f
 }
 
-func (instance *ThenHttpResponseStepFactory) thenHeaders(ctx api.StepDefinitionContext) {
+func (instance *ThenHttpResponseStepFactory) enableHeadersStepSupport(ctx api.StepDefinitionContext) {
 	instance.thenHeadersContains(ctx)
 	instance.thenHeadersEqualsTo(ctx)
 }
@@ -126,7 +140,7 @@ func (instance *ThenHttpResponseStepFactory) headersAssertionFactory(predicate f
 
 func (instance *ThenHttpResponseStepFactory) createHeadersAssertionHandler(c api.ScenarioContext, opts FactoryOpts[any], predicate func(map[string]string, map[string]string) bool) any {
 	f := func(alias string, table *godog.Table) error {
-		res, err := instance.getHttpResponse(c, alias)
+		res, err := getHttpResponse(c, alias)
 		if err != nil {
 			return err
 		}
@@ -186,7 +200,7 @@ func (instance *ThenHttpResponseStepFactory) headersMismatchError(headers map[st
 	return fmt.Errorf("response headers:\n%s", sb.String())
 }
 
-func (instance *ThenHttpResponseStepFactory) thenResponseBody(ctx api.StepDefinitionContext) {
+func (instance *ThenHttpResponseStepFactory) enableResponseBodyStepSupport(ctx api.StepDefinitionContext) {
 	instance.thenBodyEqualTo(ctx)
 	instance.thenBodyEqualFile(ctx)
 	instance.thenBodyRespectsJsonSchema(ctx)
@@ -259,7 +273,7 @@ func (instance *ThenHttpResponseStepFactory) createBodyEqualsToAssertionHandler(
 }
 
 func (instance *ThenHttpResponseStepFactory) assertResponseBodyEqualsTo(c api.ScenarioContext, alias string, binary []byte, opts FactoryOpts[any]) error {
-	res, err := instance.getHttpResponse(c, alias)
+	res, err := getHttpResponse(c, alias)
 	if err != nil {
 		return err
 	}
@@ -334,7 +348,7 @@ func (instance *ThenHttpResponseStepFactory) jsonSchemaAssertionFactory(scheme U
 
 func (instance *ThenHttpResponseStepFactory) createThenBodyCompliesWithJsonSchema(c api.ScenarioContext, scheme URIScheme, opts FactoryOpts[any]) any {
 	f := func(alias, value string) error {
-		res, err := instance.getHttpResponse(c, alias)
+		res, err := getHttpResponse(c, alias)
 		if err != nil {
 			return err
 		}
@@ -420,7 +434,7 @@ func (instance *ThenHttpResponseStepFactory) fetchContentFromURI(c api.ScenarioC
 	return io.ReadAll(res.Body)
 }
 
-func (instance *ThenHttpResponseStepFactory) getHttpResponse(c api.ScenarioContext, alias string) (*Response, error) {
+func getHttpResponse(c api.ScenarioContext, alias string) (*Response, error) {
 	component, err := c.GetGivenComponent(ComponentType, alias)
 	if err != nil {
 		return nil, err

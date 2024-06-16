@@ -5,7 +5,7 @@ import (
 )
 
 type FactoryOpts[S any] struct {
-	Settings                    S
+	Settings                    *S
 	AssertTrue                  bool
 	AssertAlias                 bool
 	ResolveValueBeforeAssertion bool
