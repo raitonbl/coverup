@@ -45,7 +45,7 @@ func (instance *PathOperations) enabledEqualsToSupport(ctx api.StepDefinitionCon
 }
 
 func (instance *PathOperations) enabledSupportTo(ctx api.StepDefinitionContext, operation string, f func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory) {
-	verbs := []string{"is", "isn't"}
+	verbs := []string{"is", "is not"}
 	aliases := []string{"", httpRequestRegex}
 	args := []string{anyStringRegex, resolvableStringRegex, valueRegex, anyNumber, boolRegex}
 	for _, verb := range verbs {
@@ -56,7 +56,7 @@ func (instance *PathOperations) enabledSupportTo(ctx api.StepDefinitionContext, 
 		for _, alias := range aliases {
 			for _, arg := range args {
 				var phrases []string
-				format := fmt.Sprintf(`%s %s is %s to %s`, instance.Line, instance.ExpressionPattern, operation, arg)
+				format := fmt.Sprintf(`%s %s %s %s to %s`, instance.Line, instance.ExpressionPattern, verb, operation, arg)
 				if alias == aliases[0] {
 					phrases = instance.PhraseFactory(format)
 				} else {

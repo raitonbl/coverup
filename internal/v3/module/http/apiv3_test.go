@@ -36,6 +36,7 @@ func TestV3Api(m *testing.T) {
 		`http response body respects json schema http://localhost:8080/schemas/product.json`,
 		`http response body respects json schema https://localhost:8443/schemas/product.json`,
 		`http response header content-type is equal to "application/json"`,
+		`http response header content-type is not equal to "application/problem+json"`,
 	}
 	for _, assertion := range opts {
 		name := assertion
