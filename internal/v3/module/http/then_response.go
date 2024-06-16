@@ -2,9 +2,15 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/cucumber/godog"
 	"github.com/raitonbl/coverup/pkg/api"
+	pkgHttp "github.com/raitonbl/coverup/pkg/http"
+	"github.com/thoas/go-funk"
+	"github.com/xeipuuv/gojsonschema"
+	"io"
+	"net/http"
 	"reflect"
 	"strings"
 )
@@ -13,7 +19,6 @@ type ThenHttpResponseStepFactory struct {
 }
 
 func (instance *ThenHttpResponseStepFactory) New(ctx api.StepDefinitionContext) {
-	instance.thenHeader(ctx)
 	instance.thenHeaders(ctx)
 	instance.thenStatusCode(ctx)
 	instance.thenResponseBody(ctx)
@@ -80,10 +85,6 @@ func (instance *ThenHttpResponseStepFactory) createThenStatusCode(c api.Scenario
 		}
 	}
 	return f
-}
-
-func (instance *ThenHttpResponseStepFactory) thenHeader(ctx api.StepDefinitionContext) {
-
 }
 
 func (instance *ThenHttpResponseStepFactory) thenHeaders(ctx api.StepDefinitionContext) {
@@ -205,7 +206,7 @@ func (instance *ThenHttpResponseStepFactory) thenBodyEqualTo(ctx api.StepDefinit
 }
 
 func (instance *ThenHttpResponseStepFactory) thenBodyEqualFile(ctx api.StepDefinitionContext) {
-	instance.thenBodyEqualToSrc(ctx, "file", " file://", true)
+	instance.thenBodyEqualToSrc(ctx, "file", " file://(.*)", true)
 }
 
 func (instance *ThenHttpResponseStepFactory) thenBodyEqualToSrc(ctx api.StepDefinitionContext, targetType, regex string, isFileURI bool) {
@@ -314,7 +315,137 @@ func (instance *ThenHttpResponseStepFactory) createThenBodyEqualsToSrc(c api.Sce
 }
 
 func (instance *ThenHttpResponseStepFactory) thenBodyRespectsJsonSchema(ctx api.StepDefinitionContext) {
+	verbs := []string{
+		"respects",
+		"doesn't respect",
+	}
+	schemes := []URIScheme{
+		fileUriScheme,
+		httpUriScheme,
+		httpsUriScheme,
+	}
+	for _, verb := range verbs {
+		step := api.StepDefinition{
+			Description: fmt.Sprintf("Asserts that a %s response body %s a specific JSON schema", ComponentType, verb),
+			Options:     nil,
+		}
+		opts := []string{"", httpRequestRegex}
+		for _, opt := range opts {
+			for _, scheme := range schemes {
+				var phrases []string
+				format := fmt.Sprintf(`body %s json schema %s://(.*)`, scheme, verb)
+				if opt == opts[0] {
+					phrases = createResponseLinePart(format)
+				} else {
+					phrases = createAliasedResponseLinePart(format)
+				}
+				f := func(c api.ScenarioContext) any {
+					return instance.createThenBodyCompliesWithJsonSchema(c, scheme, FactoryOpts[any]{
+						ResolveValueBeforeAssertion: true,
+						AssertAlias:                 opt == opts[1],
+						AssertTrue:                  verb == verbs[0],
+					})
+				}
+				for _, phrase := range phrases {
+					step.Options = append(step.Options, api.Option{
+						HandlerFactory: f,
+						Regexp:         phrase,
+						Description:    step.Description,
+					})
+				}
+			}
+		}
+		ctx.Then(step)
+	}
+}
 
+func (instance *ThenHttpResponseStepFactory) createThenBodyCompliesWithJsonSchema(c api.ScenarioContext, scheme URIScheme, opts FactoryOpts[any]) any {
+	f := func(alias, value string) error {
+		res, err := instance.getHttpResponse(c, alias)
+		if err != nil {
+			return err
+		}
+		if res.headers["content-type"] != "application/json" && res.headers["content-type"] != "application/problem+json" {
+			return fmt.Errorf("headers[content-type] must be application/json or application/problem+json")
+		}
+		if scheme == noneUriScheme {
+			return fmt.Errorf("URI scheme must be defined")
+		}
+		if scheme != fileUriScheme && scheme != httpUriScheme && scheme != httpsUriScheme {
+			return fmt.Errorf(`URI scheme "%s" isn't supported`, scheme)
+		}
+		v, err := c.GetValue(ComponentType, "schemes")
+		if err != nil {
+			return err
+		}
+		var schemes map[string]gojsonschema.JSONLoader
+		if v == nil {
+			schemes = make(map[string]gojsonschema.JSONLoader)
+			_ = c.SetValue(ComponentType, "schemes", schemes)
+		} else {
+			schemes = v.(map[string]gojsonschema.JSONLoader)
+		}
+		valueOf, hasValue := schemes[value]
+		if !hasValue {
+			binary, prob := instance.doGetFromURI(c, scheme, value)
+			if prob != nil {
+				return prob
+			}
+			l := gojsonschema.NewBytesLoader(binary)
+			schemes[value] = l
+			valueOf = l
+		}
+		schemaLoader := valueOf.(gojsonschema.JSONLoader)
+		documentLoader := gojsonschema.NewBytesLoader(res.body)
+		r, err := gojsonschema.Validate(schemaLoader, documentLoader)
+		if err != nil {
+			return err
+		}
+		if opts.AssertTrue {
+			if r.Valid() {
+				return nil
+			}
+			return errors.New(
+				strings.Join(funk.Map(r.Errors(), func(desc gojsonschema.ResultError) string {
+					return fmt.Sprintf("- %s", desc)
+				}).([]string), "\n"),
+			)
+		}
+		if !r.Valid() {
+			return nil
+		}
+		return fmt.Errorf("schema respects the schema %s://%s when it shouldn't", scheme, value)
+	}
+	if !opts.AssertAlias {
+		return func(value string) error {
+			return f("", value)
+		}
+	}
+	return f
+}
+
+func (instance *ThenHttpResponseStepFactory) doGetFromURI(c api.ScenarioContext, scheme URIScheme, value string) ([]byte, error) {
+	if scheme == fileUriScheme {
+		return c.GetFS().ReadFile(value)
+	} else {
+		url := string(scheme) + "://" + value
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		h, err := c.GetValue(ComponentType, "httpClient")
+		if err != nil {
+			return nil, err
+		}
+		if h == nil {
+			h = http.DefaultClient
+		}
+		res, err := h.(pkgHttp.Client).Do(req)
+		if err != nil {
+			return nil, err
+		}
+		return io.ReadAll(res.Body)
+	}
 }
 
 func (instance *ThenHttpResponseStepFactory) getHttpResponse(c api.ScenarioContext, alias string) (*Response, error) {
