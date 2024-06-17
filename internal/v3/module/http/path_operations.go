@@ -64,59 +64,6 @@ func (instance *PathOperations) enabledContainsSupport(ctx api.StepDefinitionCon
 	instance.enabledSupportTo(ctx, "contain", true, instance.containsAssertionFactory)
 }
 
-func (instance *PathOperations) enabledSupportTo(ctx api.StepDefinitionContext, operation string, allowsIgnoreCase bool, f func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory) {
-	verbs := []string{"should", "shouldn't"}
-	aliases := []string{"", httpRequestRegex}
-	args := []string{anyStringRegex, resolvableStringRegex, valueRegex, anyNumber, boolRegex}
-	for _, verb := range verbs {
-		step := api.StepDefinition{
-			Description: fmt.Sprintf("Asserts that a specific %s response %s %s the specified value", instance.Line, fmt.Sprintf("%s %s", verb, operation), ComponentType),
-			Options:     make([]api.Option, 0),
-		}
-		for _, alias := range aliases {
-			for _, arg := range args {
-				numberOfOptions := 1
-				supportsIgnoreCase := allowsIgnoreCase && (arg == anyStringRegex || arg == resolvableStringRegex || arg == valueRegex)
-				if supportsIgnoreCase {
-					numberOfOptions = 2
-				}
-				for i := 0; i < numberOfOptions; i++ {
-					isIgnoreCase := i == 1
-					var phrases []string
-					format := fmt.Sprintf(`%s %s %s %s %s`, instance.Line, instance.ExpressionPattern, verb, operation, arg)
-					if alias == aliases[0] {
-						phrases = instance.PhraseFactory(format)
-					} else {
-						phrases = instance.AliasedPhraseFactory(format)
-					}
-					for _, p := range phrases {
-						phrase := p
-						if isIgnoreCase {
-							phrase += ", ignoring case"
-						}
-						phrase += "$"
-						options := FactoryOpts[PathOperationSettings]{
-							Settings: &PathOperationSettings{
-								ValueRegexp: arg,
-								IgnoreCase:  isIgnoreCase,
-							},
-							AssertTrue:                  verb == verbs[0],
-							AssertAlias:                 alias == aliases[1],
-							ResolveValueBeforeAssertion: arg != anyNumber && arg != boolRegex,
-						}
-						step.Options = append(step.Options, api.Option{
-							Regexp:         phrase,
-							Description:    step.Description,
-							HandlerFactory: f(options),
-						})
-					}
-				}
-			}
-		}
-		ctx.Then(step)
-	}
-}
-
 func (instance *PathOperations) startsWithAssertionFactory(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
 	return instance.stringOperationAssertionFactory(options, strings.HasPrefix)
 }
@@ -248,5 +195,58 @@ func (instance *PathOperations) createHandler(options FactoryOpts[PathOperationS
 		return func(alias string, expr, value string) error {
 			return f.(func(string, string, any) error)(alias, expr, value)
 		}
+	}
+}
+
+func (instance *PathOperations) enabledSupportTo(ctx api.StepDefinitionContext, operation string, allowsIgnoreCase bool, f func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory) {
+	verbs := []string{"should", "shouldn't"}
+	aliases := []string{"", httpRequestRegex}
+	args := []string{anyStringRegex, resolvableStringRegex, valueRegex, anyNumber, boolRegex}
+	for _, verb := range verbs {
+		step := api.StepDefinition{
+			Description: fmt.Sprintf("Asserts that a specific %s response %s %s the specified value", instance.Line, fmt.Sprintf("%s %s", verb, operation), ComponentType),
+			Options:     make([]api.Option, 0),
+		}
+		for _, alias := range aliases {
+			for _, arg := range args {
+				numberOfOptions := 1
+				supportsIgnoreCase := allowsIgnoreCase && (arg == anyStringRegex || arg == resolvableStringRegex || arg == valueRegex)
+				if supportsIgnoreCase {
+					numberOfOptions = 2
+				}
+				for i := 0; i < numberOfOptions; i++ {
+					isIgnoreCase := i == 1
+					var phrases []string
+					format := fmt.Sprintf(`%s %s %s %s %s`, instance.Line, instance.ExpressionPattern, verb, operation, arg)
+					if alias == aliases[0] {
+						phrases = instance.PhraseFactory(format)
+					} else {
+						phrases = instance.AliasedPhraseFactory(format)
+					}
+					for _, p := range phrases {
+						phrase := p
+						if isIgnoreCase {
+							phrase += ", ignoring case"
+						}
+						phrase += "$"
+						options := FactoryOpts[PathOperationSettings]{
+							Settings: &PathOperationSettings{
+								ValueRegexp: arg,
+								IgnoreCase:  isIgnoreCase,
+							},
+							AssertTrue:                  verb == verbs[0],
+							AssertAlias:                 alias == aliases[1],
+							ResolveValueBeforeAssertion: arg != anyNumber && arg != boolRegex,
+						}
+						step.Options = append(step.Options, api.Option{
+							Regexp:         phrase,
+							Description:    step.Description,
+							HandlerFactory: f(options),
+						})
+					}
+				}
+			}
+		}
+		ctx.Then(step)
 	}
 }
