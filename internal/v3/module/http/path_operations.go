@@ -5,6 +5,7 @@ import (
 	"github.com/raitonbl/coverup/pkg/api"
 	"github.com/raitonbl/coverup/pkg/checks"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -23,44 +24,119 @@ type PathOperationSettings struct {
 }
 
 type PathOperations struct {
-	Line                 string
-	ExpressionPattern    string
-	PhraseFactory        func(string) []string
-	AliasedPhraseFactory func(string) []string
-	ExtractFromResponse  func(response *Response, expr string) (any, error)
+	ConvertToNumberIfNecessary bool
+	Line                       string
+	ExpressionPattern          string
+	PhraseFactory              func(string) []string
+	AliasedPhraseFactory       func(string) []string
+	ExtractFromResponse        func(response *Response, expr string) (any, error)
 }
 
 func (instance *PathOperations) New(ctx api.StepDefinitionContext) {
-	instance.enabledEqualsToSupport(ctx)
-	instance.enabledEndsWithSupport(ctx)
-	instance.enabledStartsWithSupport(ctx)
-	instance.enabledContainsSupport(ctx)
-	instance.enabledRegexSupport(ctx)
-	// is lesser
-	// is greater
-	// is lesser or equal to
-	// is greater or equal to
-	// is part of
-	// is contained within
+	arr := []func(api.StepDefinitionContext){
+		instance.enableRegexSupport,
+		instance.enableEqualsToSupport,
+		instance.enableStartsWithSupport,
+		instance.enableEndsWithSupport,
+		instance.enableContainsSupport,
+		instance.enableLesserThanSupport,
+		instance.enableLesserOrEqualToSupport,
+		instance.enableGreaterThanSupport,
+		instance.enableGreaterOrEqualToSupport,
+		// is part of
+		// is contained within
+	}
+	for _, f := range arr {
+		f(ctx)
+	}
 }
 
-func (instance *PathOperations) enabledRegexSupport(ctx api.StepDefinitionContext) {
+func (instance *PathOperations) enableLesserThanSupport(ctx api.StepDefinitionContext) {
+	instance.enabledSupportTo(ctx, "lesser than", false, func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
+		return instance.numericComparisonAssertionFactory(options, checks.IsLesserThan)
+	})
+}
+
+func (instance *PathOperations) enableLesserOrEqualToSupport(ctx api.StepDefinitionContext) {
+	instance.enabledSupportTo(ctx, "lesser or equal to", false, func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
+		return instance.numericComparisonAssertionFactory(options, checks.IsLesserOrEqualTo)
+	})
+}
+
+func (instance *PathOperations) enableGreaterThanSupport(ctx api.StepDefinitionContext) {
+	instance.enabledSupportTo(ctx, "greater than", false, func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
+		return instance.numericComparisonAssertionFactory(options, checks.IsGreaterThan)
+	})
+}
+
+func (instance *PathOperations) enableGreaterOrEqualToSupport(ctx api.StepDefinitionContext) {
+	instance.enabledSupportTo(ctx, "greater or equal to", false, func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
+		return instance.numericComparisonAssertionFactory(options, checks.IsGreaterOrEqualTo)
+	})
+}
+
+func (instance *PathOperations) numericComparisonAssertionFactory(options FactoryOpts[PathOperationSettings], predicate func(float64, float64) bool) api.HandlerFactory {
+	parseFloat64 := func(attr string, value any) (float64, error) {
+		if !checks.IsString(value) && !instance.ConvertToNumberIfNecessary {
+			return 0, fmt.Errorf("%s must be a float64", attr)
+		}
+		if o, err := strconv.ParseFloat(value.(string), 64); err != nil {
+			return 0, fmt.Errorf("cannot convert %v, from %s, into float64 due to:\n%v", value, attr, err)
+		} else {
+			return o, nil
+		}
+	}
+	return func(c api.ScenarioContext) any {
+		f := func(alias string, expr string, v any) error {
+			compareTo := v
+			res, err := getHttpResponse(c, alias)
+			if err != nil {
+				return err
+			}
+			if addr, isString := compareTo.(string); isString && options.ResolveValueBeforeAssertion {
+				valueOf, prob := c.Resolve(addr)
+				if prob != nil {
+					return prob
+				}
+				compareTo = valueOf
+				if compareTo, err = parseFloat64(v.(string), compareTo); err != nil {
+					return err
+				}
+			}
+			fromResponse, err := instance.ExtractFromResponse(res, expr)
+			if err != nil {
+				return err
+			}
+			if fromResponse, err = parseFloat64(expr, fromResponse); err != nil {
+				return err
+			}
+			r := predicate(fromResponse.(float64), compareTo.(float64))
+			if r == options.AssertTrue {
+				return nil
+			}
+			return fmt.Errorf("response.%s[%s]=%v", instance.Line, expr, fromResponse)
+		}
+		return instance.createHandler(options, f)
+	}
+}
+
+func (instance *PathOperations) enableRegexSupport(ctx api.StepDefinitionContext) {
 	instance.enabledSupportTo(ctx, "match pattern", true, instance.regexAssertionFactory)
 }
 
-func (instance *PathOperations) enabledEqualsToSupport(ctx api.StepDefinitionContext) {
+func (instance *PathOperations) enableEqualsToSupport(ctx api.StepDefinitionContext) {
 	instance.enabledSupportTo(ctx, "be equal to", true, instance.equalsToAssertionFactory)
 }
 
-func (instance *PathOperations) enabledStartsWithSupport(ctx api.StepDefinitionContext) {
+func (instance *PathOperations) enableStartsWithSupport(ctx api.StepDefinitionContext) {
 	instance.enabledSupportTo(ctx, "start with", true, instance.startsWithAssertionFactory)
 }
 
-func (instance *PathOperations) enabledEndsWithSupport(ctx api.StepDefinitionContext) {
+func (instance *PathOperations) enableEndsWithSupport(ctx api.StepDefinitionContext) {
 	instance.enabledSupportTo(ctx, "end with", true, instance.endsWithAssertionFactory)
 }
 
-func (instance *PathOperations) enabledContainsSupport(ctx api.StepDefinitionContext) {
+func (instance *PathOperations) enableContainsSupport(ctx api.StepDefinitionContext) {
 	instance.enabledSupportTo(ctx, "contain", true, instance.containsAssertionFactory)
 }
 
@@ -166,38 +242,6 @@ func (instance *PathOperations) equalsToAssertionFactory(options FactoryOpts[Pat
 	}
 }
 
-func (instance *PathOperations) createHandler(options FactoryOpts[PathOperationSettings], f any) any {
-	if !options.AssertAlias {
-		alias := ""
-		if options.Settings.ValueRegexp == anyNumber {
-			return func(expr string, value float64) error {
-				return f.(func(string, string, any) error)(alias, expr, value)
-			}
-		} else if options.Settings.ValueRegexp == boolRegex {
-			return func(expr string, value bool) error {
-				return f.(func(string, string, any) error)(alias, expr, value)
-			}
-		} else {
-			return func(expr, value string) error {
-				return f.(func(string, string, any) error)(alias, expr, value)
-			}
-		}
-	}
-	if options.Settings.ValueRegexp == anyNumber {
-		return func(alias string, expr string, value float64) error {
-			return f.(func(string, string, any) error)(alias, expr, value)
-		}
-	} else if options.Settings.ValueRegexp == boolRegex {
-		return func(alias string, expr string, value bool) error {
-			return f.(func(string, string, any) error)(alias, expr, value)
-		}
-	} else {
-		return func(alias string, expr, value string) error {
-			return f.(func(string, string, any) error)(alias, expr, value)
-		}
-	}
-}
-
 func (instance *PathOperations) enabledSupportTo(ctx api.StepDefinitionContext, operation string, allowsIgnoreCase bool, f func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory) {
 	verbs := []string{"should", "shouldn't"}
 	aliases := []string{"", httpRequestRegex}
@@ -248,5 +292,37 @@ func (instance *PathOperations) enabledSupportTo(ctx api.StepDefinitionContext, 
 			}
 		}
 		ctx.Then(step)
+	}
+}
+
+func (instance *PathOperations) createHandler(options FactoryOpts[PathOperationSettings], f any) any {
+	if !options.AssertAlias {
+		alias := ""
+		if options.Settings.ValueRegexp == anyNumber {
+			return func(expr string, value float64) error {
+				return f.(func(string, string, any) error)(alias, expr, value)
+			}
+		} else if options.Settings.ValueRegexp == boolRegex {
+			return func(expr string, value bool) error {
+				return f.(func(string, string, any) error)(alias, expr, value)
+			}
+		} else {
+			return func(expr, value string) error {
+				return f.(func(string, string, any) error)(alias, expr, value)
+			}
+		}
+	}
+	if options.Settings.ValueRegexp == anyNumber {
+		return func(alias string, expr string, value float64) error {
+			return f.(func(string, string, any) error)(alias, expr, value)
+		}
+	} else if options.Settings.ValueRegexp == boolRegex {
+		return func(alias string, expr string, value bool) error {
+			return f.(func(string, string, any) error)(alias, expr, value)
+		}
+	} else {
+		return func(alias string, expr, value string) error {
+			return f.(func(string, string, any) error)(alias, expr, value)
+		}
 	}
 }

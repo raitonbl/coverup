@@ -42,3 +42,19 @@ func MatchesRegexp(v any, regex *regexp.Regexp) bool {
 	}
 	return regex.Match([]byte(value))
 }
+
+func IsLesserThan(v1 float64, v2 float64) bool {
+	return v1 < v2
+}
+
+func IsLesserOrEqualTo(v1 float64, v2 float64) bool {
+	return v1 <= v2
+}
+
+func IsGreaterThan(v1 float64, v2 float64) bool {
+	return v1 > v2
+}
+
+func IsGreaterOrEqualTo(v1 float64, v2 float64) bool {
+	return v1 >= v2
+}
