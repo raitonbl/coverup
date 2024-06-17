@@ -27,10 +27,11 @@ func (instance *ThenHttpResponseStepFactory) New(ctx api.StepDefinitionContext) 
 
 func (instance *ThenHttpResponseStepFactory) enableHeaderComparisonStepSupport(ctx api.StepDefinitionContext) {
 	ops := PathOperations{
-		ExpressionPattern:    `(.*)`,
-		Line:                 "header",
-		PhraseFactory:        createResponseLinePart,
-		AliasedPhraseFactory: createAliasedResponseLinePart,
+		ExpressionPattern:          `(.*)`,
+		Line:                       "header",
+		ConvertToNumberIfNecessary: true,
+		PhraseFactory:              createResponseLinePart,
+		AliasedPhraseFactory:       createAliasedResponseLinePart,
 		ExtractFromResponse: func(res *Response, expr string) (any, error) {
 			return res.headers[expr], nil
 		},

@@ -21,7 +21,10 @@ func TestV3Api(m *testing.T) {
 			| content-type | application/json |`,
 		`http response headers should be:
 			| content-type 	  | application/json 															|
-			| x-amzn-trace-id | Root=1-5f84c3a3-91f49ffb0a2e26a3a3e58d0c; Parent=36b815b057b745d6; Sampled=1 |`,
+			| x-amzn-trace-id | Root=1-5f84c3a3-91f49ffb0a2e26a3a3e58d0c; Parent=36b815b057b745d6; Sampled=1 |
+			| x-ratelimit-remaining| 50|
+			| x-ratelimit-limit | 100|
+			| x-ratelimit-reset |1625690400|`,
 		`http response headers shouldn't contain:
 			| content-type | application/xml |`,
 		`http response headers shouldn't be:
@@ -44,6 +47,10 @@ func TestV3Api(m *testing.T) {
 		`http response header content-type should contain "/"`,
 		`http response header content-type should match pattern "application/*"`,
 		`http response header content-type shouldn't match pattern "*/xml"`,
+		`http response header x-ratelimit-remaining should be greater than 49`,
+		`http response header x-ratelimit-remaining should be greater or equal to 50`,
+		`http response header x-ratelimit-limit should be lesser than 101`,
+		`http response header x-ratelimit-remaining should be lesser or equal to 1625690400`,
 	}
 	for _, assertion := range opts {
 		name := assertion
@@ -101,8 +108,11 @@ func doAssertHttpGetProduct(t *testing.T, id string, def []byte, fm map[string]f
 				StatusCode: 200,
 				Status:     http.StatusText(200),
 				Header: map[string][]string{
-					"content-type":    {"application/json"},
-					"x-amzn-trace-id": {"Root=1-5f84c3a3-91f49ffb0a2e26a3a3e58d0c; Parent=36b815b057b745d6; Sampled=1"},
+					"x-ratelimit-remaining": {"50"},
+					"x-ratelimit-limit":     {"100"},
+					"x-ratelimit-reset":     {"1625690400"},
+					"content-type":          {"application/json"},
+					"x-amzn-trace-id":       {"Root=1-5f84c3a3-91f49ffb0a2e26a3a3e58d0c; Parent=36b815b057b745d6; Sampled=1"},
 				},
 				Body: io.NopCloser(bytes.NewBuffer(r)),
 			}, nil
@@ -149,5 +159,4 @@ func ExecV3(t *testing.T, definition []byte, c map[string]func(*http.Request) (*
 		},
 	}
 	suite.Run()
-	fmt.Println("Smoke")
 }
