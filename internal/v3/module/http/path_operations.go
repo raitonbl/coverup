@@ -52,25 +52,25 @@ func (instance *PathOperations) New(ctx api.StepDefinitionContext) {
 }
 
 func (instance *PathOperations) enableLesserThanSupport(ctx api.StepDefinitionContext) {
-	instance.enabledSupportTo(ctx, "lesser than", false, func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
+	instance.enabledSupportTo(ctx, "be lesser than", false, func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
 		return instance.numericComparisonAssertionFactory(options, checks.IsLesserThan)
 	})
 }
 
 func (instance *PathOperations) enableLesserOrEqualToSupport(ctx api.StepDefinitionContext) {
-	instance.enabledSupportTo(ctx, "lesser or equal to", false, func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
+	instance.enabledSupportTo(ctx, "be lesser or equal to", false, func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
 		return instance.numericComparisonAssertionFactory(options, checks.IsLesserOrEqualTo)
 	})
 }
 
 func (instance *PathOperations) enableGreaterThanSupport(ctx api.StepDefinitionContext) {
-	instance.enabledSupportTo(ctx, "greater than", false, func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
+	instance.enabledSupportTo(ctx, "be greater than", false, func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
 		return instance.numericComparisonAssertionFactory(options, checks.IsGreaterThan)
 	})
 }
 
 func (instance *PathOperations) enableGreaterOrEqualToSupport(ctx api.StepDefinitionContext) {
-	instance.enabledSupportTo(ctx, "greater or equal to", false, func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
+	instance.enabledSupportTo(ctx, "be greater or equal to", false, func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
 		return instance.numericComparisonAssertionFactory(options, checks.IsGreaterOrEqualTo)
 	})
 }
