@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/raitonbl/coverup/pkg/api"
 	"github.com/raitonbl/coverup/pkg/checks"
+	"github.com/thoas/go-funk"
 	"regexp"
 	"strconv"
 	"strings"
@@ -43,12 +44,53 @@ func (instance *PathOperations) New(ctx api.StepDefinitionContext) {
 		instance.enableLesserOrEqualToSupport,
 		instance.enableGreaterThanSupport,
 		instance.enableGreaterOrEqualToSupport,
-		// is part of
-		// is contained within
+		instance.enableArraySupport,
 	}
 	for _, f := range arr {
 		f(ctx)
 	}
+}
+
+func (instance *PathOperations) enableArraySupport(context api.StepDefinitionContext) {
+	// should be any of [1,2,3,4]
+	// should be any of ["A","B","C","D"]
+	// should be any of [${Properties.environment.lifetime_in_millis},"A","B" ,1 ]
+	// should be any of ${Properties.environment}
+
+}
+
+func (instance *PathOperations) arrayOfAssertionFactory(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
+	return func(c api.ScenarioContext) any {
+		f := func(alias string, expr string, v string) error {
+			res, err := getHttpResponse(c, alias)
+			if err != nil {
+				return err
+			}
+			valueOf, err := instance.ExtractFromResponse(res, expr)
+			if err != nil {
+				return err
+			}
+			arr, err := parseArray(c, options.Settings.ValueRegexp, v)
+			if err != nil {
+				return err
+			}
+			isTrue := funk.Contains(arr, valueOf)
+			if isTrue == options.AssertTrue {
+				return nil
+			}
+			if options.AssertTrue {
+				return fmt.Errorf("%v isn't part of %v", valueOf, arr)
+			}
+			return fmt.Errorf("%v is part of %v", valueOf, arr)
+		}
+		return instance.createHandler(options, f)
+	}
+}
+
+func parseArray(c api.ScenarioContext, arrayType string, value string) ([]any, error) {
+	_ = make([]any, 0)
+
+	return nil, nil
 }
 
 func (instance *PathOperations) enableLesserThanSupport(ctx api.StepDefinitionContext) {
