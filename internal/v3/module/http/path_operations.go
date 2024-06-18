@@ -14,10 +14,16 @@ const (
 	anyStringRegex        = `"([^"]*)"`
 	boolRegex             = `(true|false)`
 	anyNumber             = `(-?\d+(\.\d+)?)`
+	arrayRegex            = `\[.*?\]`
 	resolvableStringRegex = `"` + valueRegex + `"`
 )
 
-var regexpCache = make(map[string]*regexp.Regexp)
+var (
+	boolRegexp, _      = regexp.Compile(boolRegex)
+	anyNumberRegexp, _ = regexp.Compile(anyNumber)
+	valueRegexp, _     = regexp.Compile(valueRegex)
+	regexpCache        = make(map[string]*regexp.Regexp)
+)
 
 type PathOperationSettings struct {
 	IgnoreCase  bool
@@ -44,22 +50,18 @@ func (instance *PathOperations) New(ctx api.StepDefinitionContext) {
 		instance.enableLesserOrEqualToSupport,
 		instance.enableGreaterThanSupport,
 		instance.enableGreaterOrEqualToSupport,
-		instance.enableArraySupport,
+		instance.enableAnyOf,
 	}
 	for _, f := range arr {
 		f(ctx)
 	}
 }
 
-func (instance *PathOperations) enableArraySupport(context api.StepDefinitionContext) {
-	// should be any of [1,2,3,4]
-	// should be any of ["A","B","C","D"]
-	// should be any of [${Properties.environment.lifetime_in_millis},"A","B" ,1 ]
-	// should be any of ${Properties.environment}
-
+func (instance *PathOperations) enableAnyOf(ctx api.StepDefinitionContext) {
+	instance.enabledSupportTo(ctx, "be any of", false, []string{valueRegex, arrayRegex}, instance.anyOfAssertionFactory)
 }
 
-func (instance *PathOperations) arrayOfAssertionFactory(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
+func (instance *PathOperations) anyOfAssertionFactory(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
 	return func(c api.ScenarioContext) any {
 		f := func(alias string, expr string, v string) error {
 			res, err := getHttpResponse(c, alias)
@@ -70,7 +72,12 @@ func (instance *PathOperations) arrayOfAssertionFactory(options FactoryOpts[Path
 			if err != nil {
 				return err
 			}
-			arr, err := parseArray(c, options.Settings.ValueRegexp, v)
+			var arr any
+			if options.Settings.ValueRegexp == valueRegex {
+				arr, err = c.Resolve(v)
+			} else {
+				arr, err = parseArray(c, v)
+			}
 			if err != nil {
 				return err
 			}
@@ -87,32 +94,50 @@ func (instance *PathOperations) arrayOfAssertionFactory(options FactoryOpts[Path
 	}
 }
 
-func parseArray(c api.ScenarioContext, arrayType string, value string) ([]any, error) {
-	_ = make([]any, 0)
-
-	return nil, nil
+func parseArray(c api.ScenarioContext, value string) ([]any, error) {
+	var arr = make([]any, 0)
+	t := strings.Split(value, ",")
+	for _, each := range t {
+		if boolRegexp.MatchString(each) {
+			arr = append(arr, each == "true")
+		} else if anyNumberRegexp.MatchString(each) {
+			v, _ := strconv.ParseFloat(each, 64)
+			arr = append(arr, v)
+		} else if strings.HasPrefix(each, "\"") && strings.HasSuffix(each, "\"") {
+			arr = append(arr, each[1:len(each)-1])
+		} else if valueRegexp.MatchString(each) {
+			v, err := c.Resolve(each)
+			if err != nil {
+				return nil, err
+			}
+			arr = append(arr, v)
+		} else {
+			return nil, fmt.Errorf("%v isn't support as part of [%v]", each, value)
+		}
+	}
+	return arr, nil
 }
 
 func (instance *PathOperations) enableLesserThanSupport(ctx api.StepDefinitionContext) {
-	instance.enabledSupportTo(ctx, "be lesser than", false, func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
+	instance.enabledSupportTo(ctx, "be lesser than", false, instance.getDefaultArgs(), func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
 		return instance.numericComparisonAssertionFactory(options, checks.IsLesserThan)
 	})
 }
 
 func (instance *PathOperations) enableLesserOrEqualToSupport(ctx api.StepDefinitionContext) {
-	instance.enabledSupportTo(ctx, "be lesser or equal to", false, func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
+	instance.enabledSupportTo(ctx, "be lesser or equal to", false, instance.getDefaultArgs(), func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
 		return instance.numericComparisonAssertionFactory(options, checks.IsLesserOrEqualTo)
 	})
 }
 
 func (instance *PathOperations) enableGreaterThanSupport(ctx api.StepDefinitionContext) {
-	instance.enabledSupportTo(ctx, "be greater than", false, func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
+	instance.enabledSupportTo(ctx, "be greater than", false, instance.getDefaultArgs(), func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
 		return instance.numericComparisonAssertionFactory(options, checks.IsGreaterThan)
 	})
 }
 
 func (instance *PathOperations) enableGreaterOrEqualToSupport(ctx api.StepDefinitionContext) {
-	instance.enabledSupportTo(ctx, "be greater or equal to", false, func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
+	instance.enabledSupportTo(ctx, "be greater or equal to", false, instance.getDefaultArgs(), func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
 		return instance.numericComparisonAssertionFactory(options, checks.IsGreaterOrEqualTo)
 	})
 }
@@ -163,23 +188,23 @@ func (instance *PathOperations) numericComparisonAssertionFactory(options Factor
 }
 
 func (instance *PathOperations) enableRegexSupport(ctx api.StepDefinitionContext) {
-	instance.enabledSupportTo(ctx, "match pattern", true, instance.regexAssertionFactory)
+	instance.enabledSupportTo(ctx, "match pattern", true, instance.getDefaultArgs(), instance.regexAssertionFactory)
 }
 
 func (instance *PathOperations) enableEqualsToSupport(ctx api.StepDefinitionContext) {
-	instance.enabledSupportTo(ctx, "be equal to", true, instance.equalsToAssertionFactory)
+	instance.enabledSupportTo(ctx, "be equal to", true, instance.getDefaultArgs(), instance.equalsToAssertionFactory)
 }
 
 func (instance *PathOperations) enableStartsWithSupport(ctx api.StepDefinitionContext) {
-	instance.enabledSupportTo(ctx, "start with", true, instance.startsWithAssertionFactory)
+	instance.enabledSupportTo(ctx, "start with", true, instance.getDefaultArgs(), instance.startsWithAssertionFactory)
 }
 
 func (instance *PathOperations) enableEndsWithSupport(ctx api.StepDefinitionContext) {
-	instance.enabledSupportTo(ctx, "end with", true, instance.endsWithAssertionFactory)
+	instance.enabledSupportTo(ctx, "end with", true, instance.getDefaultArgs(), instance.endsWithAssertionFactory)
 }
 
 func (instance *PathOperations) enableContainsSupport(ctx api.StepDefinitionContext) {
-	instance.enabledSupportTo(ctx, "contain", true, instance.containsAssertionFactory)
+	instance.enabledSupportTo(ctx, "contain", true, instance.getDefaultArgs(), instance.containsAssertionFactory)
 }
 
 func (instance *PathOperations) startsWithAssertionFactory(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
@@ -284,10 +309,10 @@ func (instance *PathOperations) equalsToAssertionFactory(options FactoryOpts[Pat
 	}
 }
 
-func (instance *PathOperations) enabledSupportTo(ctx api.StepDefinitionContext, operation string, allowsIgnoreCase bool, f func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory) {
+func (instance *PathOperations) enabledSupportTo(ctx api.StepDefinitionContext, operation string, allowsIgnoreCase bool, args []string, f func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory) {
 	verbs := []string{"should", "shouldn't"}
 	aliases := []string{"", httpRequestRegex}
-	args := []string{anyStringRegex, resolvableStringRegex, valueRegex, anyNumber, boolRegex}
+	//	args := []string{anyStringRegex, resolvableStringRegex, valueRegex, anyNumber, boolRegex}
 	for _, verb := range verbs {
 		step := api.StepDefinition{
 			Description: fmt.Sprintf("Asserts that a specific %s response %s %s the specified value", instance.Line, fmt.Sprintf("%s %s", verb, operation), ComponentType),
@@ -367,4 +392,8 @@ func (instance *PathOperations) createHandler(options FactoryOpts[PathOperationS
 			return f.(func(string, string, any) error)(alias, expr, value)
 		}
 	}
+}
+
+func (instance *PathOperations) getDefaultArgs() []string {
+	return []string{anyStringRegex, resolvableStringRegex, valueRegex, anyNumber, boolRegex}
 }

@@ -51,6 +51,7 @@ func TestV3Api(m *testing.T) {
 		`http response header x-ratelimit-remaining should be greater or equal to 50`,
 		`http response header x-ratelimit-limit should be lesser than 101`,
 		`http response header x-ratelimit-remaining should be lesser or equal to 1625690400`,
+		`http response header x-ratelimit-remaining should be any of [41,49,50]`,
 	}
 	for _, assertion := range opts {
 		name := assertion
