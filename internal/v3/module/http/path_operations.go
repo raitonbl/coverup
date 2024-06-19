@@ -228,7 +228,6 @@ func (instance *PathOperations) regexAssertionFactory(options FactoryOpts[PathOp
 		if !hasValue {
 			c, err := regexp.Compile(pattern)
 			if err != nil {
-				// TODO: LOG
 				return false
 			}
 			r = c
@@ -373,8 +372,11 @@ func (instance *PathOperations) createHandler(options FactoryOpts[PathOperationS
 				return f.(func(string, string, any) error)(alias, expr, value)
 			}
 		} else if options.Settings.ValueRegexp == boolRegex {
-			return func(expr string, value bool) error {
-				return f.(func(string, string, any) error)(alias, expr, value)
+			return func(expr string, value string) error {
+				if value != "true" && value != "false" {
+					return fmt.Errorf("value=%s must be a boolean", value)
+				}
+				return f.(func(string, string, any) error)(alias, expr, value == "true")
 			}
 		} else {
 			return func(expr, value string) error {

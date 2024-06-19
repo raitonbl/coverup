@@ -26,7 +26,7 @@ func TestV3Api_on_body(m *testing.T) {
 		`http response body $.warranty.amount should be equal to 2`,
 		`http response body $.warranty.amount shouldn't be equal to 3`,
 		`http response body $.in_promotion should be equal to false`,
-		`http response body $.in_promotion should n't be equal to true`,
+		`http response body $.in_promotion shouldn't be equal to true`,
 		`http response body $.name should match pattern "^Seagate"`,
 		`http response body $.name shouldn't match pattern "^X"`,
 		`http response body should be file://requests/product.json`,
