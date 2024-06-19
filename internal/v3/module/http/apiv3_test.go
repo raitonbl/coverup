@@ -33,7 +33,7 @@ func TestV3Api_on_body(m *testing.T) {
 		`http response body respects json schema file://schemas/product.json`,
 		`http response body respects json schema http://localhost:8080/schemas/product.json`,
 		`http response body respects json schema https://localhost:8443/schemas/product.json`,
-		`response body should:
+		`http response body should be:
 		"""
 			` + string(readProductFromFile(id)) + `
 		"""`,
