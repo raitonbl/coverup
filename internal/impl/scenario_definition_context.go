@@ -1,7 +1,8 @@
-package api
+package impl
 
 import (
 	"github.com/cucumber/godog"
+	api2 "github.com/raitonbl/coverup/internal/api"
 	"github.com/raitonbl/coverup/pkg/api"
 	"io/fs"
 )
@@ -9,7 +10,7 @@ import (
 type ScenarioDefinitionContext struct {
 	FileSystem         fs.ReadFileFS
 	steps              []api.StepDefinition
-	OnScenarioCreation func(*DefaultScenarioContext)
+	OnScenarioCreation func(*api2.DefaultScenarioContext)
 }
 
 func (instance *ScenarioDefinitionContext) Step(definition api.StepDefinition) {
@@ -32,7 +33,7 @@ func (instance *ScenarioDefinitionContext) Configure(c *godog.ScenarioContext) {
 	if instance.steps == nil {
 		instance.steps = make([]api.StepDefinition, 0)
 	}
-	sc := &DefaultScenarioContext{
+	sc := &api2.DefaultScenarioContext{
 		Filesystem: instance.FileSystem,
 		Vars:       make(map[string]any),
 		References: make(map[string]api.Component),

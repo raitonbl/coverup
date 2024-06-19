@@ -1,4 +1,4 @@
-package pkg
+package api
 
 import (
 	"github.com/cucumber/godog"
