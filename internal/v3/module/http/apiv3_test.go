@@ -58,7 +58,8 @@ func TestV3Api_on_headers(m *testing.T) {
 		`http response header x-ratelimit-remaining should be greater or equal to 50`,
 		`http response header x-ratelimit-limit should be lesser than 101`,
 		`http response header x-ratelimit-remaining should be lesser or equal to 1625690400`,
-		`http response header x-ratelimit-remaining should be any of [41,49,50]`,
+		`http response header x-ratelimit-remaining shouldn't be any of [41,49,50]`,    // type conversion isn't supported
+		`http response header x-ratelimit-remaining should be any of ["41","49","50"]`, // type conversion isn't supported
 	})
 }
 

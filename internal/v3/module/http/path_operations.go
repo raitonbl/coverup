@@ -100,14 +100,14 @@ func parseArray(c api.ScenarioContext, value string) ([]any, error) {
 	for _, each := range t {
 		if boolRegexp.MatchString(each) {
 			arr = append(arr, each == "true")
+		} else if strings.HasPrefix(each, `"`) && strings.HasSuffix(each, `"`) {
+			arr = append(arr, each[1:len(each)-1])
 		} else if anyNumberRegexp.MatchString(each) {
 			v, err := strconv.ParseFloat(each, 64)
 			if err != nil {
 				return nil, err
 			}
 			arr = append(arr, v)
-		} else if strings.HasPrefix(each, `"`) && strings.HasSuffix(each, `"`) {
-			arr = append(arr, each[1:len(each)-1])
 		} else if valueRegexp.MatchString(each) {
 			v, err := c.Resolve(each)
 			if err != nil {
