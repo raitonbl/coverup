@@ -12,9 +12,16 @@ import (
 	"testing"
 )
 
-func TestV3Api(m *testing.T) {
+func TestV3Api_on_body(m *testing.T) {
 	id := "27258303-9ebc-4b84-a17e-f886161ab2f5"
-	opts := []string{
+	doTestV3Api(m, id, []string{
+		"http response status code should be 200",
+	})
+}
+
+func TestV3Api_on_headers(m *testing.T) {
+	id := "27258303-9ebc-4b84-a17e-f886161ab2f5"
+	doTestV3Api(m, id, []string{
 		"http response status code should be 200",
 		"http response status code shouldn't be 201",
 		`http response headers should contain:
@@ -52,7 +59,10 @@ func TestV3Api(m *testing.T) {
 		`http response header x-ratelimit-limit should be lesser than 101`,
 		`http response header x-ratelimit-remaining should be lesser or equal to 1625690400`,
 		`http response header x-ratelimit-remaining should be any of [41,49,50]`,
-	}
+	})
+}
+
+func doTestV3Api(m *testing.T, id string, opts []string) {
 	for _, assertion := range opts {
 		name := assertion
 		if len(name) > 35 {
