@@ -17,9 +17,9 @@ func (instance *ThenHttpResponseStepFactory) New(ctx api.StepDefinitionContext) 
 
 func (instance *ThenHttpResponseStepFactory) enableBodyPathStepSupport(ctx api.StepDefinitionContext) {
 	ops := PathOperations{
-		ExpressionPattern:          `\$(\S+)`,
-		Line:                       "body",
 		ConvertToNumberIfNecessary: false,
+		Line:                       "body",
+		ExpressionPattern:          `\$(\S+)`,
 		PhraseFactory:              createResponseLinePart,
 		AliasedPhraseFactory:       createAliasedResponseLinePart,
 		ExtractFromResponse: func(res *Response, expr string) (any, error) {

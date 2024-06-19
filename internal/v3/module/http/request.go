@@ -61,6 +61,9 @@ type JsonPathContext struct {
 }
 
 func (instance *JsonPathContext) Get(expr string) (any, error) {
+	if expr[0] == '.' {
+		return instance.Get(expr[1:])
+	}
 	valueOf, hasValue := instance.cache[expr]
 	if hasValue {
 		return valueOf, nil
