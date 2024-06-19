@@ -7,6 +7,7 @@ import (
 	"github.com/cucumber/godog/colors"
 	"github.com/raitonbl/coverup/internal/v3/api"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"testing"
@@ -188,4 +189,233 @@ func ExecV3(t *testing.T, definition []byte, c map[string]func(*http.Request) (*
 		},
 	}
 	suite.Run()
+}
+
+func readProductFromFile(id string) []byte {
+	return []byte(`
+	{
+	  "id": "` + id + `",
+	  "name": "Seagate One Touch SSD 1TB External SSD Portable – Black, speeds up to 1030MB/s",
+	  "summary": "An external SSD device that guarantees 1TB storage",
+	  "image": "/photos/27258303-9ebc-4b84-a17e-f886161ab2f5",
+	  "in_promotion": false,
+	  "offer_created_at": "2022-06-06T12:34:56Z",
+	  "offer_expires_at": "2024-12-31T23:59:56Z",
+      "designed_at":"2024-12-31",
+	  "about": [
+		"One Touch SSD is a mini USB 3.0 SSD featuring a lightweight, textile design for busy days and bustling commutes.",
+		"High-speed, portable solid state drive perfect for streaming stored videos directly to laptop, scrolling seamlessly through photos, and backing up content on the go. ",
+		"Enjoy long-term peace of mind with the included three-year limited warranty and Rescue Data Recovery Services. "
+	  ],
+	  "tags": [
+		{
+		  "id": "ebbb5082-58f4-4ea4-9840-e02cc86501de",
+		  "name": "IT"
+		},
+		{
+		  "id": "0c61ba6a-baea-4316-b2c2-e847253d029b",
+		  "name": "HDD"
+		}
+	  ],
+	  "warranty": {
+		"amount": 2,
+		"unit": "years"
+	  },
+	  "price": {
+		"amount": 200,
+		"currency": "USD"
+	  },
+	  "characteristics": {
+		"capacity": {
+		  "amount": 1,
+		  "unit": "TB"
+		},
+		"hard_disk_interface": "USB-C",
+		"connectivity_technology": "USB",
+		"brand": "Seagate",
+		"special_feature": "Portable",
+		"hard_disk_form_factor": {
+		  "amount": 2.5,
+		  "unit": "inch"
+		},
+		"hard_disk_description": "SSD",
+		"color": "BLACK",
+		"installation_type": "EXTERNAL"
+	  }
+	}`)
+}
+
+func getProductJSONSchema() []byte {
+	return []byte(`
+			{
+			  "$schema": "http://json-schema.org/draft-07/schema#",
+			  "type": "object",
+			  "properties": {
+				"id": {
+				  "type": "string"
+				},
+				"name": {
+				  "type": "string"
+				},
+				"summary": {
+				  "type": "string"
+				},
+				"image": {
+				  "type": "string"
+				},
+				"in_promotion": {
+				  "type": "boolean"
+				},
+				"offer_created_at": {
+				  "type": "string",
+				  "format": "date-time"
+				},
+				"offer_expires_at": {
+				  "type": "string",
+				  "format": "date-time"
+				},
+				"about": {
+				  "type": "array",
+				  "items": {
+					"type": "string"
+				  }
+				},
+				"tags": {
+				  "type": "array",
+				  "items": {
+					"type": "object",
+					"properties": {
+					  "id": {
+						"type": "string"
+					  },
+					  "name": {
+						"type": "string"
+					  }
+					},
+					"required": ["id", "name"]
+				  }
+				},
+				"warranty": {
+				  "type": "object",
+				  "properties": {
+					"amount": {
+					  "type": "integer"
+					},
+					"unit": {
+					  "type": "string"
+					}
+				  },
+				  "required": ["amount", "unit"]
+				},
+				"price": {
+				  "type": "object",
+				  "properties": {
+					"amount": {
+					  "type": "number"
+					},
+					"currency": {
+					  "type": "string"
+					}
+				  },
+				  "required": ["amount", "currency"]
+				},
+				"characteristics": {
+				  "type": "object",
+				  "properties": {
+					"capacity": {
+					  "type": "object",
+					  "properties": {
+						"amount": {
+						  "type": "integer"
+						},
+						"unit": {
+						  "type": "string"
+						}
+					  },
+					  "required": ["amount", "unit"]
+					},
+					"hard_disk_interface": {
+					  "type": "string"
+					},
+					"connectivity_technology": {
+					  "type": "string"
+					},
+					"brand": {
+					  "type": "string"
+					},
+					"special_feature": {
+					  "type": "string"
+					},
+					"hard_disk_form_factor": {
+					  "type": "object",
+					  "properties": {
+						"amount": {
+						  "type": "number"
+						},
+						"unit": {
+						  "type": "string"
+						}
+					  },
+					  "required": ["amount", "unit"]
+					},
+					"hard_disk_description": {
+					  "type": "string"
+					},
+					"color": {
+					  "type": "string"
+					},
+					"installation_type": {
+					  "type": "string"
+					}
+				  },
+				  "required": [
+					"capacity",
+					"hard_disk_interface",
+					"connectivity_technology",
+					"brand",
+					"special_feature",
+					"hard_disk_form_factor",
+					"hard_disk_description",
+					"color",
+					"installation_type"
+				  ]
+				}
+			  },
+			  "required": [
+				"id",
+				"name",
+				"summary",
+				"image",
+				"in_promotion",
+				"offer_created_at",
+				"offer_expires_at",
+				"about",
+				"tags",
+				"warranty",
+				"price",
+				"characteristics"
+			  ]
+			}
+		`)
+}
+
+type FnHttpClient struct {
+	m map[string]func(*http.Request) (*http.Response, error)
+}
+
+func (f *FnHttpClient) Do(req *http.Request) (*http.Response, error) {
+	k := req.Method + " " + req.URL.String()
+	return f.m[k](req)
+}
+
+type FnFS struct {
+	m map[string]func() ([]byte, error)
+}
+
+func (f FnFS) Open(name string) (fs.File, error) {
+	panic("implement me")
+}
+
+func (f FnFS) ReadFile(name string) ([]byte, error) {
+	return f.m[name]()
 }
