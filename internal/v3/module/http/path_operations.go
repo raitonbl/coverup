@@ -14,7 +14,7 @@ const (
 	anyStringRegex        = `"([^"]*)"`
 	boolRegex             = `(true|false)`
 	anyNumber             = `(-?\d+(\.\d+)?)`
-	arrayRegex            = `\[.*?\]`
+	arrayRegex            = `\[(.*?)\]`
 	resolvableStringRegex = `"` + valueRegex + `"`
 )
 
@@ -63,7 +63,7 @@ func (instance *PathOperations) enableAnyOf(ctx api.StepDefinitionContext) {
 
 func (instance *PathOperations) anyOfAssertionFactory(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
 	return func(c api.ScenarioContext) any {
-		f := func(alias string, expr string, v string) error {
+		f := func(alias string, expr string, v any) error {
 			res, err := getHttpResponse(c, alias)
 			if err != nil {
 				return err
@@ -74,9 +74,9 @@ func (instance *PathOperations) anyOfAssertionFactory(options FactoryOpts[PathOp
 			}
 			var arr any
 			if options.Settings.ValueRegexp == valueRegex {
-				arr, err = c.Resolve(v)
+				arr, err = c.Resolve(v.(string))
 			} else {
-				arr, err = parseArray(c, v)
+				arr, err = parseArray(c, v.(string))
 			}
 			if err != nil {
 				return err
@@ -101,9 +101,12 @@ func parseArray(c api.ScenarioContext, value string) ([]any, error) {
 		if boolRegexp.MatchString(each) {
 			arr = append(arr, each == "true")
 		} else if anyNumberRegexp.MatchString(each) {
-			v, _ := strconv.ParseFloat(each, 64)
+			v, err := strconv.ParseFloat(each, 64)
+			if err != nil {
+				return nil, err
+			}
 			arr = append(arr, v)
-		} else if strings.HasPrefix(each, "\"") && strings.HasSuffix(each, "\"") {
+		} else if strings.HasPrefix(each, `"`) && strings.HasSuffix(each, `"`) {
 			arr = append(arr, each[1:len(each)-1])
 		} else if valueRegexp.MatchString(each) {
 			v, err := c.Resolve(each)
