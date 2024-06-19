@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"github.com/cucumber/godog"
 	"github.com/cucumber/godog/colors"
-	"github.com/raitonbl/coverup/internal/api"
-	"github.com/raitonbl/coverup/internal/impl"
+	"github.com/raitonbl/coverup/internal/sdk"
 	"io"
 	"io/fs"
 	"net/http"
@@ -163,9 +162,9 @@ func ExecV3(t *testing.T, definition []byte, c map[string]func(*http.Request) (*
 	httpClient := &FnHttpClient{
 		c,
 	}
-	ctx := &impl.ScenarioDefinitionContext{
+	ctx := &sdk.ScenarioDefinitionContext{
 		FileSystem: filesystem,
-		OnScenarioCreation: func(context *api.DefaultScenarioContext) {
+		OnScenarioCreation: func(context *sdk.DefaultScenarioContext) {
 			_ = context.SetValue(ComponentType, "httpClient", httpClient)
 		},
 	}

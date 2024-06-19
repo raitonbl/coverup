@@ -1,4 +1,4 @@
-package impl
+package sdk
 
 import (
 	"io/fs"

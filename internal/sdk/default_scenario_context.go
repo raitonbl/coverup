@@ -1,4 +1,4 @@
-package api
+package sdk
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-var valueRegexp = regexp.MustCompile(ValueExpression)
+var valueRegexp = regexp.MustCompile(api.ValueExpression)
 
 type DefaultScenarioContext struct {
 	Filesystem fs.ReadFileFS

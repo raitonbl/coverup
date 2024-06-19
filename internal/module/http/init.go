@@ -20,10 +20,9 @@ const (
 const (
 	serverURLRegex   = `(https?://[^\s]+)`
 	relativeURIRegex = `/([^/]+(?:/[^/]+)*)`
-	valueRegex       = `\{\{\s*([a-zA-Z0-9_]+\.)*[a-zA-Z0-9_]+\s*\}\}`
+	valueRegex       = api.ValueExpression
 	httpRequestRegex = `\{\{\s*` + ComponentType + `\.[a-zA-Z0-9_]+\s*\}\}`
-	entityRegex      = `\{\{\s*Entity\.[a-zA-Z0-9_]+\s*\}\}`
-	propertyRegex    = `\{\{\s*Properties\.[a-zA-Z0-9_]+\s*\}\}`
+	propertyRegex    = api.PropertyExpression
 )
 
 func OnV3(ctx api.StepDefinitionContext) {
