@@ -15,6 +15,8 @@ import (
 	"strings"
 )
 
+const ContentTypeHeaderName = "content-type"
+
 type ThenBasicHttpResponseStepFactory struct {
 }
 
@@ -279,7 +281,7 @@ func (instance *ThenBasicHttpResponseStepFactory) assertResponseBodyEqualsTo(c a
 		return err
 	}
 	var predicate func() (bool, error)
-	if res.headers["content-type"] == "application/json" {
+	if res.headers[ContentTypeHeaderName] == "application/json" {
 		predicate = func() (bool, error) {
 			fromResponse := map[string]any{}
 			if prob := json.Unmarshal(res.body, &fromResponse); prob != nil {
@@ -353,7 +355,7 @@ func (instance *ThenBasicHttpResponseStepFactory) createThenBodyCompliesWithJson
 		if err != nil {
 			return err
 		}
-		if res.headers["content-type"] != "application/json" && res.headers["content-type"] != "application/problem+json" {
+		if res.headers[ContentTypeHeaderName] != "application/json" && res.headers[ContentTypeHeaderName] != "application/problem+json" {
 			return fmt.Errorf("headers[content-type] must be application/json or application/problem+json")
 		}
 		if scheme == noneUriScheme {
