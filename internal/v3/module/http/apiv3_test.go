@@ -15,7 +15,28 @@ import (
 func TestV3Api_on_body(m *testing.T) {
 	id := "27258303-9ebc-4b84-a17e-f886161ab2f5"
 	doTestV3Api(m, id, []string{
-		"http response status code should be 200",
+		`response body $.id should be "` + id + `"`,
+		`response body $.id shouldn't be "RaitonBL"`,
+		`response body $.summary should contain "SSD"`,
+		`response body $.summary should contain "ssd", ignoring case`,
+		`response body $.name should start with "Seagate"`,
+		`response body $.name should start with "SeaGate", ignoring case`,
+		`response body $.name should end with "MB/s"`,
+		`response body $.name should end with "mb/s",ignoring case`,
+		`response body $.warranty.amount should be 2`,
+		`response body $.warranty.amount shouldn't be 3`,
+		`response body $.in_promotion should be false`,
+		`response body $.in_promotion should n't be true`,
+		`response body $.name should match pattern "^Seagate"`,
+		`response body $.name shouldn't match pattern "^X"`,
+		`http response body should be file://requests/product.json`,
+		`http response body respects json schema file://schemas/product.json`,
+		`http response body respects json schema http://localhost:8080/schemas/product.json`,
+		`http response body respects json schema https://localhost:8443/schemas/product.json`,
+		`response body should:
+		"""
+			` + string(readProductFromFile(id)) + `
+		"""`,
 	})
 }
 
@@ -37,14 +58,10 @@ func TestV3Api_on_headers(m *testing.T) {
 		`http response headers shouldn't be:
 			| content-type 	  | application/problem+json 													|
 			| x-amzn-trace-id | Root=1-5f84c3a3-91f49ffb0a2e26a3a3e58d0c; Parent=36b815b057b745d6; Sampled=1 |`,
-		`http response body is:
+		`http response body should be:
 		"""
 			` + string(readProductFromFile(id)) + `
 		"""`,
-		`http response body is file://requests/product.json`,
-		`http response body respects json schema file://schemas/product.json`,
-		`http response body respects json schema http://localhost:8080/schemas/product.json`,
-		`http response body respects json schema https://localhost:8443/schemas/product.json`,
 		`http response header content-type should be equal to "application/json"`,
 		`http response header content-type shouldn't be equal to "application/problem+json"`,
 		`http response header content-type should be equal to "application/JSON", ignoring case`,

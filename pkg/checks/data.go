@@ -1,6 +1,7 @@
 package checks
 
 import (
+	"github.com/thoas/go-funk"
 	"regexp"
 )
 
@@ -57,4 +58,8 @@ func IsGreaterThan(v1 float64, v2 float64) bool {
 
 func IsGreaterOrEqualTo(v1 float64, v2 float64) bool {
 	return v1 >= v2
+}
+
+func IsAnyOf(value string, values ...string) bool {
+	return funk.Contains(values, value)
 }
