@@ -1,9 +1,11 @@
-package api
+package v3
 
 import (
 	"fmt"
-	v3Pkg "github.com/raitonbl/coverup/internal/v3/pkg"
+	"github.com/cucumber/godog"
+	v3Pkg "github.com/raitonbl/coverup/internal/pkg"
 	"github.com/raitonbl/coverup/pkg/api"
+	"github.com/raitonbl/coverup/pkg/http"
 	"io/fs"
 	"regexp"
 	"strings"
@@ -12,17 +14,30 @@ import (
 var valueRegexp = regexp.MustCompile(v3Pkg.ValueExpression)
 
 type DefaultScenarioContext struct {
-	Filesystem fs.ReadFileFS
-	Vars       map[string]any
-	References map[string]api.Component
-	Aliases    map[string]map[string]api.Component
+	Filesystem   fs.ReadFileFS
+	HttpClient   http.Client
+	GoDogContext *godog.ScenarioContext
+	References   map[string]api.Component
+	Aliases      map[string]map[string]api.Component
+}
+
+func (d *DefaultScenarioContext) GetServerURL() string {
+	panic("implement me")
+}
+
+func (d *DefaultScenarioContext) GetHttpClient() http.Client {
+	return d.HttpClient
+}
+
+func (d *DefaultScenarioContext) GetResourcesHttpClient() http.Client {
+	return d.HttpClient
 }
 
 func (d *DefaultScenarioContext) GetFS() fs.ReadFileFS {
 	return d.Filesystem
 }
 
-func (d *DefaultScenarioContext) Resolve(src string) (any, error) {
+func (d *DefaultScenarioContext) GetValue(src string) (any, error) {
 	matches := valueRegexp.FindAllStringSubmatch(src, -1)
 	if len(matches) == 0 {
 		return src, nil
@@ -43,16 +58,6 @@ func (d *DefaultScenarioContext) Resolve(src string) (any, error) {
 	}
 
 	return parsedValue, nil
-}
-
-func (d *DefaultScenarioContext) GetGivenComponent(componentType, alias string) (any, error) {
-	if alias != "" {
-		if components, exists := d.Aliases[componentType]; exists {
-			return components[alias], nil
-		}
-		return nil, nil
-	}
-	return d.References[componentType], nil
 }
 
 func (d *DefaultScenarioContext) getValueFromExpression(key, expr string, cache map[string]string) (string, error) {
@@ -91,7 +96,22 @@ func (d *DefaultScenarioContext) getComponentOrElseThrow(componentType, componen
 
 	return component, nil
 }
-func (d *DefaultScenarioContext) AddGivenComponent(componentType string, ptr api.Component, alias string) error {
+
+func (d *DefaultScenarioContext) GerkhinContext() *godog.ScenarioContext {
+	return d.GoDogContext
+}
+
+func (d *DefaultScenarioContext) GetComponent(componentType, alias string) (any, error) {
+	if alias != "" {
+		if components, exists := d.Aliases[componentType]; exists {
+			return components[alias], nil
+		}
+		return nil, nil
+	}
+	return d.References[componentType], nil
+}
+
+func (d *DefaultScenarioContext) Register(componentType string, ptr api.Component, alias string) error {
 	if alias != "" {
 		if _, hasValue := d.Aliases[componentType]; !hasValue {
 			d.Aliases[componentType] = make(map[string]api.Component)
@@ -102,32 +122,5 @@ func (d *DefaultScenarioContext) AddGivenComponent(componentType string, ptr api
 		d.Aliases[componentType][alias] = ptr
 	}
 	d.References[componentType] = ptr
-	return nil
-}
-
-func (d *DefaultScenarioContext) GetValue(namespace, key string) (any, error) {
-	if d.Vars == nil {
-		d.Vars = make(map[string]any)
-	}
-	if namespace == "" {
-		return nil, fmt.Errorf("namespace cannot be undefined")
-	}
-	if key == "" {
-		return nil, fmt.Errorf("key cannot be undefined")
-	}
-	return d.Vars[namespace+"."+key], nil
-}
-
-func (d *DefaultScenarioContext) SetValue(namespace, key string, value any) error {
-	if d.Vars == nil {
-		d.Vars = make(map[string]any)
-	}
-	if namespace == "" {
-		return fmt.Errorf("namespace cannot be undefined")
-	}
-	if key == "" {
-		return fmt.Errorf("key cannot be undefined")
-	}
-	d.Vars[namespace+"."+key] = value
 	return nil
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/cucumber/godog"
 	"github.com/cucumber/godog/colors"
-	"github.com/raitonbl/coverup/internal/v3/api"
+	"github.com/raitonbl/coverup/internal/api"
 	"io"
 	"io/fs"
 	"net/http"

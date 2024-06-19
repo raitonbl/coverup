@@ -7,6 +7,10 @@ import (
 type URIScheme string
 
 const (
+	ComponentType = "HttpRequest"
+)
+
+const (
 	noneUriScheme  URIScheme = ""
 	fileUriScheme  URIScheme = "file"
 	httpUriScheme  URIScheme = "http"

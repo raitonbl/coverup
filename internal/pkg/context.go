@@ -1,8 +1,8 @@
 package pkg
 
 import (
+	"context"
 	"github.com/cucumber/godog"
-	"github.com/raitonbl/coverup/internal/context"
 	"github.com/raitonbl/coverup/pkg/api"
 	"io/fs"
 )
