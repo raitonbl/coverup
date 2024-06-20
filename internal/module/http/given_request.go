@@ -2,9 +2,11 @@ package http
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"github.com/cucumber/godog"
 	"github.com/raitonbl/coverup/pkg/api"
+	"github.com/raitonbl/coverup/pkg/api/entities"
 	pkgHttp "github.com/raitonbl/coverup/pkg/http"
 	"github.com/thoas/go-funk"
 	"io"
@@ -92,27 +94,29 @@ func (instance *GivenHttpRequestStepFactory) thenSubmitRequest(ctx api.StepDefin
 }
 
 func (instance *GivenHttpRequestStepFactory) doSubmitHttpRequest(c api.ScenarioContext, onBehalfOf string, alias string) error {
-	if onBehalfOf != "" {
-		return fmt.Errorf("not implemented")
-	}
-	src, err := instance.getHttpRequest(c, alias)
+	req, err := instance.getHttpRequest(c, alias)
 	if err != nil {
 		return err
 	}
+	if onBehalfOf != "" {
+		if err = instance.setOnBehalfOf(c, req, onBehalfOf); err != nil {
+			return err
+		}
+	}
 	var body io.Reader
-	if src.body != nil {
-		body = bytes.NewReader(src.body)
+	if req.body != nil {
+		body = bytes.NewReader(req.body)
 	}
-	serverURI := src.serverURL
-	if src.path != "" {
-		serverURI += src.path
+	serverURI := req.serverURL
+	if req.path != "" {
+		serverURI += req.path
 	}
-	req, err := http.NewRequest(src.method, serverURI, body)
+	httpClientRequest, err := http.NewRequest(req.method, serverURI, body)
 	if err != nil {
 		return fmt.Errorf("creating request: %w", err)
 	}
-	for k, v := range src.headers {
-		req.Header.Set(k, v)
+	for k, v := range req.headers {
+		httpClientRequest.Header.Set(k, v)
 	}
 	valueOf, err := c.GetValue(ComponentType, "httpClient")
 	if err != nil {
@@ -123,7 +127,7 @@ func (instance *GivenHttpRequestStepFactory) doSubmitHttpRequest(c api.ScenarioC
 		httpClient = http.DefaultClient
 		_ = c.SetValue(ComponentType, "httpClient", httpClient)
 	}
-	res, err := httpClient.Do(req)
+	res, err := httpClient.Do(httpClientRequest)
 	if err != nil {
 		return fmt.Errorf("sending request: %w", err)
 	}
@@ -135,7 +139,7 @@ func (instance *GivenHttpRequestStepFactory) doSubmitHttpRequest(c api.ScenarioC
 	for k, v := range res.Header {
 		headers[k] = strings.Join(v, ",")
 	}
-	src.response = &Response{
+	req.response = &Response{
 		body:       binary,
 		headers:    headers,
 		statusCode: float64(res.StatusCode),
@@ -611,4 +615,21 @@ func (instance *GivenHttpRequestStepFactory) doGivenFormAttribute(c api.Scenario
 	}
 	req.form.attributes[name] = fmt.Sprintf("%v", v)
 	return nil
+}
+
+func (instance *GivenHttpRequestStepFactory) setOnBehalfOf(c api.ScenarioContext, req *Request, onBehalfOf string) error {
+	valueOf, err := c.Resolve(fmt.Sprintf(`{{Entities.%s}}`, onBehalfOf))
+	if err != nil {
+		return err
+	}
+	if bearerToken, isBearerToken := valueOf.(entities.BearerToken); isBearerToken {
+		req.headers["Authorization"] = fmt.Sprintf(`Bearer %s`, bearerToken.Value)
+		return nil
+	}
+	if usernameAndPassword, isUsernameAndPassword := valueOf.(entities.UsernameAndPassword); isUsernameAndPassword {
+		value := fmt.Sprintf(`%s:%s`, usernameAndPassword.Username, usernameAndPassword.Password)
+		req.headers["Authorization"] = base64.StdEncoding.EncodeToString([]byte(value))
+		return nil
+	}
+	return fmt.Errorf(`entity %s ins't supported'`, onBehalfOf)
 }

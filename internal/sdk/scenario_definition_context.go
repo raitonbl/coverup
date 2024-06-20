@@ -3,12 +3,14 @@ package sdk
 import (
 	"github.com/cucumber/godog"
 	"github.com/raitonbl/coverup/pkg/api"
+	"github.com/raitonbl/coverup/pkg/api/entities"
 	"io/fs"
 )
 
 type ScenarioDefinitionContext struct {
 	FileSystem         fs.ReadFileFS
 	steps              []api.StepDefinition
+	Entities           map[string]entities.Entity
 	OnScenarioCreation func(*DefaultScenarioContext)
 }
 
@@ -36,10 +38,22 @@ func (instance *ScenarioDefinitionContext) Configure(c *godog.ScenarioContext) {
 		Filesystem: instance.FileSystem,
 		Vars:       make(map[string]any),
 		References: make(map[string]api.Component),
+		Entities:   make(map[string]entities.Entity),
 		Aliases:    make(map[string]map[string]api.Component),
 	}
 	if instance.OnScenarioCreation != nil {
 		instance.OnScenarioCreation(sc)
+	}
+	// Assure fs from the current context is passed downstream
+	sc.Filesystem = instance.FileSystem
+	// Assure entities from the current context is passed downstream
+	if instance.Entities != nil {
+		if sc.Entities == nil {
+			sc.Entities = make(map[string]entities.Entity)
+		}
+		for id, each := range instance.Entities {
+			sc.Entities[id] = each
+		}
 	}
 	for _, definition := range instance.steps {
 		for _, option := range definition.Options {

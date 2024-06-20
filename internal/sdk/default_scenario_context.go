@@ -3,6 +3,7 @@ package sdk
 import (
 	"fmt"
 	"github.com/raitonbl/coverup/pkg/api"
+	"github.com/raitonbl/coverup/pkg/api/entities"
 	"io/fs"
 	"regexp"
 	"strings"
@@ -14,6 +15,7 @@ type DefaultScenarioContext struct {
 	Filesystem fs.ReadFileFS
 	Vars       map[string]any
 	References map[string]api.Component
+	Entities   map[string]entities.Entity
 	Aliases    map[string]map[string]api.Component
 }
 
@@ -90,7 +92,10 @@ func (d *DefaultScenarioContext) getComponentOrElseThrow(componentType, componen
 
 	return component, nil
 }
+
 func (d *DefaultScenarioContext) AddGivenComponent(componentType string, ptr api.Component, alias string) error {
+	//	if componentType == Ent
+
 	if alias != "" {
 		if _, hasValue := d.Aliases[componentType]; !hasValue {
 			d.Aliases[componentType] = make(map[string]api.Component)
