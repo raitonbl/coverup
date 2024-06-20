@@ -3,14 +3,13 @@ package sdk
 import (
 	"github.com/cucumber/godog"
 	"github.com/raitonbl/coverup/pkg/api"
-	"github.com/raitonbl/coverup/pkg/api/entities"
 	"io/fs"
 )
 
 type ScenarioDefinitionContext struct {
 	FileSystem         fs.ReadFileFS
 	steps              []api.StepDefinition
-	Entities           map[string]entities.Entity
+	Entities           map[string]api.Entity
 	OnScenarioCreation func(*DefaultScenarioContext)
 }
 
@@ -30,7 +29,7 @@ func (instance *ScenarioDefinitionContext) Then(definition api.StepDefinition) {
 	instance.doStep("Then", definition)
 }
 
-func (instance *ScenarioDefinitionContext) Configure(c *godog.ScenarioContext) {
+func (instance *ScenarioDefinitionContext) Configure(c *godog.ScenarioContext) error {
 	if instance.steps == nil {
 		instance.steps = make([]api.StepDefinition, 0)
 	}
@@ -38,7 +37,6 @@ func (instance *ScenarioDefinitionContext) Configure(c *godog.ScenarioContext) {
 		Filesystem: instance.FileSystem,
 		Vars:       make(map[string]any),
 		References: make(map[string]api.Component),
-		Entities:   make(map[string]entities.Entity),
 		Aliases:    make(map[string]map[string]api.Component),
 	}
 	if instance.OnScenarioCreation != nil {
@@ -48,11 +46,10 @@ func (instance *ScenarioDefinitionContext) Configure(c *godog.ScenarioContext) {
 	sc.Filesystem = instance.FileSystem
 	// Assure entities from the current context is passed downstream
 	if instance.Entities != nil {
-		if sc.Entities == nil {
-			sc.Entities = make(map[string]entities.Entity)
-		}
-		for id, each := range instance.Entities {
-			sc.Entities[id] = each
+		for k, v := range instance.Entities {
+			if err := sc.doAddGivenComponent(api.ComponentType, v, k, true); err != nil {
+				return err
+			}
 		}
 	}
 	for _, definition := range instance.steps {
@@ -68,6 +65,7 @@ func (instance *ScenarioDefinitionContext) Configure(c *godog.ScenarioContext) {
 			}
 		}
 	}
+	return nil
 }
 
 func (instance *ScenarioDefinitionContext) doStep(stepType string, definition api.StepDefinition) {

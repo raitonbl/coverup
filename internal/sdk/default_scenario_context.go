@@ -3,7 +3,6 @@ package sdk
 import (
 	"fmt"
 	"github.com/raitonbl/coverup/pkg/api"
-	"github.com/raitonbl/coverup/pkg/api/entities"
 	"io/fs"
 	"regexp"
 	"strings"
@@ -15,7 +14,6 @@ type DefaultScenarioContext struct {
 	Filesystem fs.ReadFileFS
 	Vars       map[string]any
 	References map[string]api.Component
-	Entities   map[string]entities.Entity
 	Aliases    map[string]map[string]api.Component
 }
 
@@ -42,7 +40,6 @@ func (d *DefaultScenarioContext) Resolve(src string) (any, error) {
 		}
 		parsedValue = strings.ReplaceAll(parsedValue, expr, v)
 	}
-
 	return parsedValue, nil
 }
 
@@ -94,13 +91,18 @@ func (d *DefaultScenarioContext) getComponentOrElseThrow(componentType, componen
 }
 
 func (d *DefaultScenarioContext) AddGivenComponent(componentType string, ptr api.Component, alias string) error {
-	//	if componentType == Ent
+	if componentType == api.ComponentType {
+		return fmt.Errorf("cannot add a component with type %s", componentType)
+	}
+	return d.doAddGivenComponent(componentType, ptr, alias, false)
+}
 
+func (d *DefaultScenarioContext) doAddGivenComponent(componentType string, ptr api.Component, alias string, allowOverride bool) error {
 	if alias != "" {
 		if _, hasValue := d.Aliases[componentType]; !hasValue {
 			d.Aliases[componentType] = make(map[string]api.Component)
 		}
-		if _, hasValue := d.Aliases[componentType][alias]; hasValue {
+		if _, hasValue := d.Aliases[componentType][alias]; hasValue && !allowOverride {
 			return fmt.Errorf("%s with alias %s cannot be defined more than once", componentType, alias)
 		}
 		d.Aliases[componentType][alias] = ptr

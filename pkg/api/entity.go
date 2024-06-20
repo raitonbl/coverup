@@ -1,12 +1,11 @@
-package entities
+package api
 
 import (
 	"fmt"
-	"github.com/raitonbl/coverup/pkg/api"
 )
 
 type Entity interface {
-	api.Component
+	Component
 	GetName() string
 	GetDescription() string
 }

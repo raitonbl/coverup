@@ -20,9 +20,7 @@ const (
 const (
 	serverURLRegex   = `(https?://[^\s]+)`
 	relativeURIRegex = `/([^/]+(?:/[^/]+)*)`
-	valueRegex       = api.ValueExpression
 	httpRequestRegex = `\{\{\s*` + ComponentType + `\.[a-zA-Z0-9_]+\s*\}\}`
-	propertyRegex    = api.PropertyExpression
 )
 
 func OnV3(ctx api.StepDefinitionContext) {

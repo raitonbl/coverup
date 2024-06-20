@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/cucumber/godog"
 	"github.com/raitonbl/coverup/pkg/api"
-	"github.com/raitonbl/coverup/pkg/api/entities"
 	pkgHttp "github.com/raitonbl/coverup/pkg/http"
 	"github.com/thoas/go-funk"
 	"io"
@@ -206,7 +205,7 @@ func (instance *GivenHttpRequestStepFactory) withFormAttribute(ctx api.StepDefin
 	}
 	args := []string{
 		`"([^"]+)"`,
-		fmt.Sprintf(`"%s"`, valueRegex),
+		fmt.Sprintf(`"%s"`, api.ValueExpression),
 	}
 	for _, arg := range args {
 		for _, regexp := range createRequestLinePart(fmt.Sprintf(`http request form attribute "([a-zA-Z_]+)" is %s$`, arg)) {
@@ -239,7 +238,7 @@ func (instance *GivenHttpRequestStepFactory) withFormFile(ctx api.StepDefinition
 	}
 	args := []string{
 		`([^"]+)`,
-		fmt.Sprintf(`%s`, valueRegex),
+		fmt.Sprintf(`%s`, api.ValueExpression),
 	}
 	for _, arg := range args {
 		for _, regexp := range createRequestLinePart(fmt.Sprintf(`http request form attribute "([a-zA-Z_]+)" is file://%s$`, arg)) {
@@ -310,7 +309,7 @@ func (instance *GivenHttpRequestStepFactory) givenRequestBody(ctx api.StepDefini
 			Description: description,
 			Options:     make([]api.Option, 0),
 		}
-		args := []string{serverURLRegex, propertyRegex}
+		args := []string{serverURLRegex, api.PropertyExpression}
 		f := func(c api.ScenarioContext) any {
 			doExec := func(value any) error {
 				req, err := instance.getHttpRequest(c, "")
@@ -364,7 +363,7 @@ func (instance *GivenHttpRequestStepFactory) givenURL(ctx api.StepDefinitionCont
 		Options:     make([]api.Option, 0),
 		Description: fmt.Sprintf("Specifies the HTTP Server URL for the current %s", ComponentType),
 	}
-	args := []string{serverURLRegex, propertyRegex}
+	args := []string{serverURLRegex, api.PropertyExpression}
 	f := func(c api.ScenarioContext) any {
 		return func(value string) error {
 			req, err := instance.getHttpRequest(c, "")
@@ -400,7 +399,7 @@ func (instance *GivenHttpRequestStepFactory) givenPath(ctx api.StepDefinitionCon
 		Description: fmt.Sprintf("Specifies the HTTP path for the current %s", ComponentType),
 		Options:     make([]api.Option, 0),
 	}
-	args := []string{relativeURIRegex, valueRegex}
+	args := []string{relativeURIRegex, api.ValueExpression}
 	f := func(c api.ScenarioContext) any {
 		return func(value string) error {
 			req, err := instance.getHttpRequest(c, "")
@@ -622,11 +621,11 @@ func (instance *GivenHttpRequestStepFactory) setOnBehalfOf(c api.ScenarioContext
 	if err != nil {
 		return err
 	}
-	if bearerToken, isBearerToken := valueOf.(entities.BearerToken); isBearerToken {
+	if bearerToken, isBearerToken := valueOf.(api.BearerToken); isBearerToken {
 		req.headers["Authorization"] = fmt.Sprintf(`Bearer %s`, bearerToken.Value)
 		return nil
 	}
-	if usernameAndPassword, isUsernameAndPassword := valueOf.(entities.UsernameAndPassword); isUsernameAndPassword {
+	if usernameAndPassword, isUsernameAndPassword := valueOf.(api.UsernameAndPassword); isUsernameAndPassword {
 		value := fmt.Sprintf(`%s:%s`, usernameAndPassword.Username, usernameAndPassword.Password)
 		req.headers["Authorization"] = base64.StdEncoding.EncodeToString([]byte(value))
 		return nil

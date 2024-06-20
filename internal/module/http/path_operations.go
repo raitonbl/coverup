@@ -15,14 +15,14 @@ const (
 	boolRegex             = `(true|false)`
 	anyNumber             = `(-?\d+(\.\d+)?)`
 	arrayRegex            = `\[(.*?)\]`
-	resolvableStringRegex = `"` + valueRegex + `"`
+	resolvableStringRegex = `"` + api.ValueExpression + `"`
 )
 
 var (
 	boolRegexp, _      = regexp.Compile(boolRegex)
 	anyNumberRegexp, _ = regexp.Compile(anyNumber)
-	valueRegexp, _     = regexp.Compile(valueRegex)
 	regexpCache        = make(map[string]*regexp.Regexp)
+	valueRegexp, _     = regexp.Compile(api.ValueExpression)
 )
 
 type PathOperationSettings struct {
@@ -58,7 +58,7 @@ func (instance *PathOperations) New(ctx api.StepDefinitionContext) {
 }
 
 func (instance *PathOperations) enableAnyOf(ctx api.StepDefinitionContext) {
-	instance.enabledSupportTo(ctx, "be any of", false, []string{valueRegex, arrayRegex}, instance.anyOfAssertionFactory)
+	instance.enabledSupportTo(ctx, "be any of", false, []string{api.ValueExpression, arrayRegex}, instance.anyOfAssertionFactory)
 }
 
 func (instance *PathOperations) anyOfAssertionFactory(options FactoryOpts[PathOperationSettings]) api.HandlerFactory {
@@ -73,7 +73,7 @@ func (instance *PathOperations) anyOfAssertionFactory(options FactoryOpts[PathOp
 				return err
 			}
 			var arr any
-			if options.Settings.ValueRegexp == valueRegex {
+			if options.Settings.ValueRegexp == api.ValueExpression {
 				arr, err = c.Resolve(v.(string))
 			} else {
 				arr, err = parseArray(c, v.(string))
@@ -314,7 +314,6 @@ func (instance *PathOperations) equalsToAssertionFactory(options FactoryOpts[Pat
 func (instance *PathOperations) enabledSupportTo(ctx api.StepDefinitionContext, operation string, allowsIgnoreCase bool, args []string, f func(options FactoryOpts[PathOperationSettings]) api.HandlerFactory) {
 	verbs := []string{"should", "shouldn't"}
 	aliases := []string{"", httpRequestRegex}
-	//	args := []string{anyStringRegex, resolvableStringRegex, valueRegex, anyNumber, boolRegex}
 	for _, verb := range verbs {
 		step := api.StepDefinition{
 			Description: fmt.Sprintf("Asserts that a specific %s response %s %s the specified value", instance.Line, fmt.Sprintf("%s %s", verb, operation), ComponentType),
@@ -323,7 +322,7 @@ func (instance *PathOperations) enabledSupportTo(ctx api.StepDefinitionContext, 
 		for _, alias := range aliases {
 			for _, arg := range args {
 				numberOfOptions := 1
-				supportsIgnoreCase := allowsIgnoreCase && (arg == anyStringRegex || arg == resolvableStringRegex || arg == valueRegex)
+				supportsIgnoreCase := allowsIgnoreCase && (arg == anyStringRegex || arg == resolvableStringRegex || arg == api.ValueExpression)
 				if supportsIgnoreCase {
 					numberOfOptions = 2
 				}
@@ -400,5 +399,5 @@ func (instance *PathOperations) createHandler(options FactoryOpts[PathOperationS
 }
 
 func (instance *PathOperations) getDefaultArgs() []string {
-	return []string{anyStringRegex, resolvableStringRegex, valueRegex, anyNumber, boolRegex}
+	return []string{anyStringRegex, resolvableStringRegex, api.ValueExpression, anyNumber, boolRegex}
 }

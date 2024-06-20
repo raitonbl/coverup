@@ -1,4 +1,4 @@
-package entities
+package api
 
 type OpenIdClient struct {
 	BasicEntity
