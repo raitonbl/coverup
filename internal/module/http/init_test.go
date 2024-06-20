@@ -3,13 +3,9 @@ package http
 import (
 	"bytes"
 	"fmt"
-	"github.com/cucumber/godog"
-	"github.com/cucumber/godog/colors"
-	"github.com/raitonbl/coverup/internal/sdk"
 	"io"
 	"io/fs"
 	"net/http"
-	"os"
 	"testing"
 )
 
@@ -117,22 +113,8 @@ func doAssertHttpGetProduct(t *testing.T, id string, def []byte, fm map[string]f
 	m["schemas/product.json"] = func() ([]byte, error) {
 		return getProductJSONSchema(), nil
 	}
-	fetchSchemaFromServer := func(request *http.Request) (*http.Response, error) {
-		f := m["schemas/product.json"]
-		binary, err := f()
-		if err != nil {
-			return nil, err
-		}
-		return &http.Response{
-			StatusCode: 200,
-			Status:     http.StatusText(200),
-			Header: map[string][]string{
-				"content-type": {"application/json"},
-			},
-			Body: io.NopCloser(bytes.NewBuffer(binary)),
-		}, nil
-	}
-	ExecV3(t, def, map[string]func(*http.Request) (*http.Response, error){
+
+	doExecGivenRequest(t, def, map[string]func(*http.Request) (*http.Response, error){
 		fmt.Sprintf("GET https://localhost:8443/items/%s", id): func(request *http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: 200,
@@ -147,12 +129,12 @@ func doAssertHttpGetProduct(t *testing.T, id string, def []byte, fm map[string]f
 				Body: io.NopCloser(bytes.NewBuffer(r)),
 			}, nil
 		},
-		"GET http://localhost:8080/schemas/product.json":  fetchSchemaFromServer,
-		"GET https://localhost:8443/schemas/product.json": fetchSchemaFromServer,
+		"GET http://localhost:8080/schemas/product.json":  getProductSchemaFromURL,
+		"GET https://localhost:8443/schemas/product.json": getProductSchemaFromURL,
 	}, m)
 }
 
-func ExecV3(t *testing.T, definition []byte, c map[string]func(*http.Request) (*http.Response, error), fm map[string]func() ([]byte, error)) {
+func doExecGivenRequest(t *testing.T, definition []byte, c map[string]func(*http.Request) (*http.Response, error), fm map[string]func() ([]byte, error)) {
 	filesystem := &FnFS{
 		fm,
 	}
@@ -160,35 +142,13 @@ func ExecV3(t *testing.T, definition []byte, c map[string]func(*http.Request) (*
 		filesystem.m = fm
 	}
 	httpClient := &FnHttpClient{
-		c,
+		m:    c,
+		data: make([]*http.Request, 0),
 	}
-	ctx := &sdk.ScenarioDefinitionContext{
-		FileSystem: filesystem,
-		OnScenarioCreation: func(context *sdk.DefaultScenarioContext) {
-			_ = context.SetValue(ComponentType, "httpClient", httpClient)
-		},
-	}
-	OnV3(ctx)
-	suite := godog.TestSuite{
-		TestSuiteInitializer: nil,
-		Options: &godog.Options{
-			TestingT:      t,
-			Strict:        true,
-			StopOnFailure: true,
-			Format:        "pretty",
-			Paths:         []string{},
-			FeatureContents: []godog.Feature{{
-				Contents: definition,
-				Name:     t.Name(),
-			},
-			},
-			Output: colors.Colored(os.Stdout),
-		},
-		ScenarioInitializer: func(goDogCtx *godog.ScenarioContext) {
-			ctx.Configure(goDogCtx)
-		},
-	}
-	suite.Run()
+	ExecGivenRequest(t, definition, GivenRequestOpts{
+		filesystem: filesystem,
+		httpClient: httpClient,
+	})
 }
 
 func readProductFromFile(id string) []byte {
@@ -400,11 +360,18 @@ func getProductJSONSchema() []byte {
 }
 
 type FnHttpClient struct {
-	m map[string]func(*http.Request) (*http.Response, error)
+	data []*http.Request
+	m    map[string]func(*http.Request) (*http.Response, error)
 }
 
 func (f *FnHttpClient) Do(req *http.Request) (*http.Response, error) {
 	k := req.Method + " " + req.URL.String()
+	defer func() {
+		if f.data == nil {
+			f.data = make([]*http.Request, 0)
+		}
+		f.data = append(f.data, req)
+	}()
 	return f.m[k](req)
 }
 

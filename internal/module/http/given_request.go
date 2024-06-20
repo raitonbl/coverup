@@ -35,15 +35,14 @@ func (instance *GivenHttpRequestStepFactory) New(ctx api.StepDefinitionContext) 
 	instance.givenRequestForm(ctx)
 	// Submit Request
 	instance.thenSubmitRequest(ctx)
+	fmt.Println("Hello")
 }
 
 func (instance *GivenHttpRequestStepFactory) thenSubmitRequest(ctx api.StepDefinitionContext) {
-	phrases := []string{`client submits the %s`, `%s submits the %s`}
-	args := []string{
-		ComponentType,
-		httpRequestRegex,
-	}
-	for _, phrase := range phrases {
+	syntaxes := []string{`client submits the %s`, `%s submits the %s`}
+
+	args := []string{ComponentType, httpRequestRegex}
+	for _, phrase := range syntaxes {
 		step := api.StepDefinition{
 			Options:     make([]api.Option, 0),
 			Description: fmt.Sprintf("Submits a previously defined %s and stores the response", ComponentType),
@@ -54,28 +53,30 @@ func (instance *GivenHttpRequestStepFactory) thenSubmitRequest(ctx api.StepDefin
 				description = fmt.Sprintf("Submits the %s whose given name matches the specified", ComponentType)
 			}
 			var variations []string
-			if phrase == phrases[1] {
+			if phrase == syntaxes[1] {
 				description = "On behalf of the specified Entity, " + strings.ToUpper(string(description[0])) + description[1:]
-				variations = []string{fmt.Sprintf("^"+phrase, arg), fmt.Sprintf("^(?i)the "+phrase, arg)}
+				variations = []string{fmt.Sprintf("^"+phrase, api.EntityExpression, arg), fmt.Sprintf("^(?i)the "+phrase, api.EntityExpression, arg)}
 			} else {
 				variations = []string{fmt.Sprintf("^(?i)"+phrase, arg), fmt.Sprintf("^(?i)the "+phrase, arg)}
 			}
+			isNamedRequest := arg == args[1]
+			isOnBehalf := phrase == syntaxes[1]
 			f := func(c api.ScenarioContext) any {
-				if phrase == phrases[0] && arg == args[0] {
+				if !isNamedRequest && !isOnBehalf {
 					return func() error {
 						return instance.doSubmitHttpRequest(c, "", "")
 					}
-				} else if phrase == phrases[0] && arg == args[1] {
+				} else if isNamedRequest && !isOnBehalf {
 					return func(alias string) error {
 						return instance.doSubmitHttpRequest(c, "", alias)
 					}
-				} else if phrase == phrases[1] && arg == args[0] {
-					return func(entityId string) error {
-						return instance.doSubmitHttpRequest(c, entityId, "")
+				} else if !isNamedRequest && isOnBehalf {
+					return func(onBehalfOf string) error {
+						return instance.doSubmitHttpRequest(c, onBehalfOf, "")
 					}
 				} else {
-					return func(entityId, alias string) error {
-						return instance.doSubmitHttpRequest(c, entityId, alias)
+					return func(onBehalfOf, alias string) error {
+						return instance.doSubmitHttpRequest(c, onBehalfOf, alias)
 					}
 				}
 			}
