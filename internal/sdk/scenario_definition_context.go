@@ -47,9 +47,7 @@ func (instance *ScenarioDefinitionContext) Configure(c *godog.ScenarioContext) e
 	// Assure entities from the current context is passed downstream
 	if instance.Entities != nil {
 		for k, v := range instance.Entities {
-			if err := sc.doAddGivenComponent(api.ComponentType, v, k, true); err != nil {
-				return err
-			}
+			_ = sc.doAddGivenComponent(api.ComponentType, v, k, true)
 		}
 	}
 	for _, definition := range instance.steps {

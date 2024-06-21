@@ -8,6 +8,7 @@ import (
 	"github.com/raitonbl/coverup/internal/sdk"
 	"github.com/raitonbl/coverup/pkg/api"
 	pkgHttp "github.com/raitonbl/coverup/pkg/http"
+	"github.com/stretchr/testify/require"
 	"io"
 	"io/fs"
 	"net/http"
@@ -54,6 +55,7 @@ func TestGivenRequestOnBehalfOfEntity(t *testing.T) {
 			"GET https://localhost:8443/schemas/product.json": getProductSchemaFromURL,
 		},
 	}
+	bearerToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 	ExecGivenRequest(t, []byte(`
 		Feature: 
 			Scenario:
@@ -74,12 +76,11 @@ func TestGivenRequestOnBehalfOfEntity(t *testing.T) {
 						Name:        "Bearer Token",
 						Description: "Just a bearer token",
 					},
-					Value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+					Value: bearerToken,
 				},
 			},
 		})
-
-	fmt.Println(`----------------`, httpClient.data[0].Header.Get("Authorization"), `----------------`)
+	require.Equal(t, httpClient.data[0].Header.Get("Authorization"), fmt.Sprintf(`Bearer %s`, bearerToken))
 }
 
 func getProductSchemaFromURL(_ *http.Request) (*http.Response, error) {
@@ -96,6 +97,7 @@ func getProductSchemaFromURL(_ *http.Request) (*http.Response, error) {
 
 func ExecGivenRequest(t *testing.T, definition []byte, givenRequestOpts GivenRequestOpts) {
 	ctx := &sdk.ScenarioDefinitionContext{
+		Entities:   givenRequestOpts.entities,
 		FileSystem: givenRequestOpts.filesystem,
 		OnScenarioCreation: func(context *sdk.DefaultScenarioContext) {
 			_ = context.SetValue(ComponentType, "httpClient", givenRequestOpts.httpClient)

@@ -40,16 +40,15 @@ func (instance *GivenHttpRequestStepFactory) New(ctx api.StepDefinitionContext) 
 
 func (instance *GivenHttpRequestStepFactory) thenSubmitRequest(ctx api.StepDefinitionContext) {
 	syntaxes := []string{`client submits the %s`, `%s submits the %s`}
-
-	args := []string{ComponentType, httpRequestRegex}
+	values := []string{ComponentType, httpRequestRegex}
 	for _, phrase := range syntaxes {
 		step := api.StepDefinition{
 			Options:     make([]api.Option, 0),
 			Description: fmt.Sprintf("Submits a previously defined %s and stores the response", ComponentType),
 		}
-		for _, arg := range args {
+		for _, arg := range values {
 			description := fmt.Sprintf("Submits the current %s", ComponentType)
-			if arg == args[1] {
+			if arg == values[1] {
 				description = fmt.Sprintf("Submits the %s whose given name matches the specified", ComponentType)
 			}
 			var variations []string
@@ -59,7 +58,7 @@ func (instance *GivenHttpRequestStepFactory) thenSubmitRequest(ctx api.StepDefin
 			} else {
 				variations = []string{fmt.Sprintf("^(?i)"+phrase, arg), fmt.Sprintf("^(?i)the "+phrase, arg)}
 			}
-			isNamedRequest := arg == args[1]
+			isNamedRequest := arg == values[1]
 			isOnBehalf := phrase == syntaxes[1]
 			f := func(c api.ScenarioContext) any {
 				if !isNamedRequest && !isOnBehalf {
@@ -83,7 +82,7 @@ func (instance *GivenHttpRequestStepFactory) thenSubmitRequest(ctx api.StepDefin
 			for _, variation := range variations {
 				step.Options = append(step.Options, api.Option{
 					HandlerFactory: f,
-					Regexp:         variation,
+					Regexp:         variation + "$",
 					Description:    description,
 				})
 			}
@@ -618,7 +617,7 @@ func (instance *GivenHttpRequestStepFactory) doGivenFormAttribute(c api.Scenario
 }
 
 func (instance *GivenHttpRequestStepFactory) setOnBehalfOf(c api.ScenarioContext, req *Request, onBehalfOf string) error {
-	valueOf, err := c.Resolve(fmt.Sprintf(`{{Entities.%s}}`, onBehalfOf))
+	valueOf, err := c.GetGivenComponent(api.ComponentType, onBehalfOf)
 	if err != nil {
 		return err
 	}
