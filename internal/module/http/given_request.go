@@ -39,7 +39,7 @@ func (instance *GivenHttpRequestStepFactory) New(ctx api.StepDefinitionContext) 
 }
 
 func (instance *GivenHttpRequestStepFactory) thenSubmitRequest(ctx api.StepDefinitionContext) {
-	syntaxes := []string{`client submits the %s`, `%s submits the %s`}
+	syntaxes := []string{`client submits the %s`, `%s submits %s`}
 	values := []string{ComponentType, httpRequestRegex}
 	for _, phrase := range syntaxes {
 		step := api.StepDefinition{
