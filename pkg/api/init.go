@@ -1,5 +1,6 @@
 package api
 
 const (
-	ComponentType = "Entities"
+	EntityComponentType     = "Entities"
+	PropertiesComponentType = "Properties"
 )

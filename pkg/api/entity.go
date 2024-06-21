@@ -23,7 +23,7 @@ func (instance BasicEntity) GetDescription() string {
 	return instance.Description
 }
 
-func (instance BasicEntity) GetPathValue(key string) (any, error) {
+func (instance BasicEntity) ValueFrom(key string) (any, error) {
 	switch key {
 	case "Name":
 		return instance.Name, nil

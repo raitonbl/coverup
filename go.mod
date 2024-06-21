@@ -9,6 +9,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/thoas/go-funk v0.9.3
 	github.com/xeipuuv/gojsonschema v1.2.0
+	gopkg.in/ini.v1 v1.67.0
 	k8s.io/client-go v0.30.1
 )
 

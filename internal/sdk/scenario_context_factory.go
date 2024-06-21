@@ -7,6 +7,7 @@ import (
 )
 
 type ScenarioContextFactory struct {
+	Properties         []string
 	FileSystem         fs.ReadFileFS
 	steps              []api.StepDefinition
 	Entities           map[string]api.Entity
@@ -33,10 +34,14 @@ func (instance *ScenarioContextFactory) Configure(c *godog.ScenarioContext) erro
 	if instance.steps == nil {
 		instance.steps = make([]api.StepDefinition, 0)
 	}
+	if instance.Properties == nil {
+		instance.Properties = make([]string, 0)
+	}
 	sc := &DefaultScenarioContext{
 		Filesystem: instance.FileSystem,
 		Vars:       make(map[string]any),
 		References: make(map[string]api.Component),
+		Resolvers:  make(map[string]ValueResolver),
 		Aliases:    make(map[string]map[string]api.Component),
 	}
 	if instance.OnScenarioCreation != nil {
@@ -47,8 +52,16 @@ func (instance *ScenarioContextFactory) Configure(c *godog.ScenarioContext) erro
 	// Assure entities from the current context is passed downstream
 	if instance.Entities != nil {
 		for k, v := range instance.Entities {
-			_ = sc.doAddGivenComponent(api.ComponentType, v, k, true)
+			_ = sc.doAddGivenComponent(api.EntityComponentType, v, k, true)
 		}
+	}
+	// Assure the original resolvers are passed down
+	if sc.Resolvers == nil {
+		engine, err := NewPropertiesEngine(sc.Filesystem, instance.Properties...)
+		if err != nil {
+			return err
+		}
+		sc.Resolvers[api.PropertiesComponentType] = engine
 	}
 	for _, definition := range instance.steps {
 		for _, option := range definition.Options {

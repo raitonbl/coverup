@@ -19,7 +19,7 @@ type Request struct {
 	headers   map[string]string
 }
 
-func (instance *Request) GetPathValue(x string) (any, error) {
+func (instance *Request) ValueFrom(x string) (any, error) {
 	panic("implement me")
 }
 
@@ -28,7 +28,7 @@ type Form struct {
 	attributes map[string]any
 }
 
-func (instance *Form) GetPathValue(x string) (any, error) {
+func (instance *Form) ValueFrom(x string) (any, error) {
 	panic("implement me")
 }
 
@@ -40,7 +40,7 @@ type Response struct {
 	jsonPath   *JsonPathContext
 }
 
-func (instance *Response) GetPathValue(x string) (any, error) {
+func (instance *Response) ValueFrom(x string) (any, error) {
 	panic("implement me")
 }
 

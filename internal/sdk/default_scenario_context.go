@@ -15,6 +15,7 @@ type DefaultScenarioContext struct {
 	Vars       map[string]any
 	References map[string]api.Component
 	Aliases    map[string]map[string]api.Component
+	Resolvers  map[string]ValueResolver
 }
 
 func (d *DefaultScenarioContext) GetFS() fs.ReadFileFS {
@@ -22,6 +23,9 @@ func (d *DefaultScenarioContext) GetFS() fs.ReadFileFS {
 }
 
 func (d *DefaultScenarioContext) Resolve(src string) (any, error) {
+	// [objectType].[objectId].<property>
+	// DynamodbItem.<id>.<property>
+	// HttpRequest.<name>.<property>
 	matches := valueRegexp.FindAllStringSubmatch(src, -1)
 	if len(matches) == 0 {
 		return src, nil
@@ -57,8 +61,30 @@ func (d *DefaultScenarioContext) getValueFromExpression(key, expr string, cache 
 	if fromCache, containsKey := cache[key]; containsKey {
 		return fromCache, nil
 	}
-	arr := strings.Split(key, ".")
-	if len(arr) < 3 {
+	indexOf := strings.Index(expr, ".")
+	componentType := expr[:indexOf]
+	if d.Resolvers == nil {
+		d.Resolvers = make(map[string]ValueResolver)
+	}
+	var err error
+	var valueOf any
+	r, hasValue := d.Resolvers[componentType]
+	if hasValue {
+		valueOf, err = r.ValueFrom(expr[indexOf+1:])
+	} else {
+		valueOf, err = d.ValueFrom(expr)
+	}
+	if err != nil {
+		return "", err
+	}
+	v := fmt.Sprintf("%v", valueOf)
+	cache[key] = v
+	return v, nil
+}
+
+func (d *DefaultScenarioContext) ValueFrom(expr string) (any, error) {
+	arr := strings.Split(expr, ".")
+	if len(arr) < 2 {
 		return "", fmt.Errorf(`expression %s is unresolvable`, expr)
 	}
 	componentType, componentId, path := arr[0], arr[1], strings.Join(arr[2:], ".")
@@ -66,14 +92,7 @@ func (d *DefaultScenarioContext) getValueFromExpression(key, expr string, cache 
 	if err != nil {
 		return "", err
 	}
-	valueOf, err := component.GetPathValue(path)
-	if err != nil {
-		return "", err
-	}
-	v := fmt.Sprintf("%v", valueOf)
-	cache[key] = v
-
-	return v, nil
+	return component.ValueFrom(path)
 }
 
 func (d *DefaultScenarioContext) getComponentOrElseThrow(componentType, componentId string) (api.Component, error) {
@@ -91,7 +110,7 @@ func (d *DefaultScenarioContext) getComponentOrElseThrow(componentType, componen
 }
 
 func (d *DefaultScenarioContext) AddGivenComponent(componentType string, ptr api.Component, alias string) error {
-	if componentType == api.ComponentType {
+	if componentType == api.EntityComponentType {
 		return fmt.Errorf("cannot add a component with type %s", componentType)
 	}
 	return d.doAddGivenComponent(componentType, ptr, alias, false)

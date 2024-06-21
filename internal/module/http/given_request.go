@@ -616,7 +616,7 @@ func (instance *GivenHttpRequestStepFactory) doGivenFormAttribute(c api.Scenario
 }
 
 func (instance *GivenHttpRequestStepFactory) setOnBehalfOf(c api.ScenarioContext, req *Request, onBehalfOf string) error {
-	valueOf, err := c.GetGivenComponent(api.ComponentType, onBehalfOf)
+	valueOf, err := c.GetGivenComponent(api.EntityComponentType, onBehalfOf)
 	if err != nil {
 		return err
 	}

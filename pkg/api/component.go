@@ -1,5 +1,5 @@
 package api
 
 type Component interface {
-	GetPathValue(x string) (any, error)
+	ValueFrom(x string) (any, error)
 }
