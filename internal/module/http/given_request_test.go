@@ -157,7 +157,7 @@ func getProductSchemaFromURL(_ *http.Request) (*http.Response, error) {
 }
 
 func ExecGivenRequest(t *testing.T, definition []byte, givenRequestOpts GivenRequestOpts) {
-	ctx := &sdk.ScenarioDefinitionContext{
+	ctx := &sdk.ScenarioContextFactory{
 		Entities:   givenRequestOpts.entities,
 		FileSystem: givenRequestOpts.filesystem,
 		OnScenarioCreation: func(context *sdk.DefaultScenarioContext) {

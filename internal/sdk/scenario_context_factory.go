@@ -6,30 +6,30 @@ import (
 	"io/fs"
 )
 
-type ScenarioDefinitionContext struct {
+type ScenarioContextFactory struct {
 	FileSystem         fs.ReadFileFS
 	steps              []api.StepDefinition
 	Entities           map[string]api.Entity
 	OnScenarioCreation func(*DefaultScenarioContext)
 }
 
-func (instance *ScenarioDefinitionContext) Step(definition api.StepDefinition) {
+func (instance *ScenarioContextFactory) Step(definition api.StepDefinition) {
 	instance.doStep("Step", definition)
 }
 
-func (instance *ScenarioDefinitionContext) Given(definition api.StepDefinition) {
+func (instance *ScenarioContextFactory) Given(definition api.StepDefinition) {
 	instance.doStep("Given", definition)
 }
 
-func (instance *ScenarioDefinitionContext) When(definition api.StepDefinition) {
+func (instance *ScenarioContextFactory) When(definition api.StepDefinition) {
 	instance.doStep("When", definition)
 }
 
-func (instance *ScenarioDefinitionContext) Then(definition api.StepDefinition) {
+func (instance *ScenarioContextFactory) Then(definition api.StepDefinition) {
 	instance.doStep("Then", definition)
 }
 
-func (instance *ScenarioDefinitionContext) Configure(c *godog.ScenarioContext) error {
+func (instance *ScenarioContextFactory) Configure(c *godog.ScenarioContext) error {
 	if instance.steps == nil {
 		instance.steps = make([]api.StepDefinition, 0)
 	}
@@ -66,7 +66,7 @@ func (instance *ScenarioDefinitionContext) Configure(c *godog.ScenarioContext) e
 	return nil
 }
 
-func (instance *ScenarioDefinitionContext) doStep(stepType string, definition api.StepDefinition) {
+func (instance *ScenarioContextFactory) doStep(stepType string, definition api.StepDefinition) {
 	if instance.steps == nil {
 		instance.steps = make([]api.StepDefinition, 0)
 	}
