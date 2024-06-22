@@ -19,21 +19,17 @@ const (
 
 var methods = []string{"OPTIONS", "HEAD", "GET", "POST", "PUT", "POST", "PATCH", "DELETE"}
 
-type GivenHttpRequestStepFactory struct {
-}
+type GivenHttpRequestStepFactory struct{}
 
 func (instance *GivenHttpRequestStepFactory) New(ctx api.StepDefinitionContext) {
 	instance.given(ctx)
-	// Configure Request
 	instance.givenHeaders(ctx)
 	instance.givenMethod(ctx)
 	instance.givenHeader(ctx)
 	instance.givenPath(ctx)
 	instance.givenURL(ctx)
-	// Request Body
 	instance.givenRequestBody(ctx)
 	instance.givenRequestForm(ctx)
-	// Submit Request
 	instance.thenSubmitRequest(ctx)
 }
 
@@ -57,27 +53,7 @@ func (instance *GivenHttpRequestStepFactory) thenSubmitRequest(ctx api.StepDefin
 			} else {
 				variations = []string{fmt.Sprintf("^(?i)"+phrase, arg), fmt.Sprintf("^(?i)the "+phrase, arg)}
 			}
-			isNamedRequest := arg == values[1]
-			isOnBehalf := phrase == syntaxes[1]
-			f := func(c api.ScenarioContext) any {
-				if !isNamedRequest && !isOnBehalf {
-					return func() error {
-						return instance.doSubmitHttpRequest(c, "", "")
-					}
-				} else if isNamedRequest && !isOnBehalf {
-					return func(alias string) error {
-						return instance.doSubmitHttpRequest(c, "", alias)
-					}
-				} else if !isNamedRequest && isOnBehalf {
-					return func(onBehalfOf string) error {
-						return instance.doSubmitHttpRequest(c, onBehalfOf, "")
-					}
-				} else {
-					return func(onBehalfOf, alias string) error {
-						return instance.doSubmitHttpRequest(c, onBehalfOf, alias)
-					}
-				}
-			}
+			f := instance.createHandlerFactory(isNamedRequest(arg, values[1]), isOnBehalf(phrase, syntaxes[1]))
 			for _, variation := range variations {
 				step.Options = append(step.Options, api.Option{
 					HandlerFactory: f,
@@ -88,7 +64,29 @@ func (instance *GivenHttpRequestStepFactory) thenSubmitRequest(ctx api.StepDefin
 		}
 		ctx.When(step)
 	}
+}
 
+func (instance *GivenHttpRequestStepFactory) createHandlerFactory(isNamedRequest, isOnBehalf bool) func(c api.ScenarioContext) any {
+	return func(c api.ScenarioContext) any {
+		switch {
+		case !isNamedRequest && !isOnBehalf:
+			return func() error { return instance.doSubmitHttpRequest(c, "", "") }
+		case isNamedRequest && !isOnBehalf:
+			return func(alias string) error { return instance.doSubmitHttpRequest(c, "", alias) }
+		case !isNamedRequest && isOnBehalf:
+			return func(onBehalfOf string) error { return instance.doSubmitHttpRequest(c, onBehalfOf, "") }
+		default:
+			return func(onBehalfOf, alias string) error { return instance.doSubmitHttpRequest(c, onBehalfOf, alias) }
+		}
+	}
+}
+
+func isNamedRequest(arg, namedRequest string) bool {
+	return arg == namedRequest
+}
+
+func isOnBehalf(phrase, onBehalfSyntax string) bool {
+	return phrase == onBehalfSyntax
 }
 
 func (instance *GivenHttpRequestStepFactory) doSubmitHttpRequest(c api.ScenarioContext, onBehalfOf string, alias string) error {
@@ -116,14 +114,9 @@ func (instance *GivenHttpRequestStepFactory) doSubmitHttpRequest(c api.ScenarioC
 	for k, v := range req.headers {
 		httpClientRequest.Header.Set(k, v)
 	}
-	valueOf, err := c.GetValue(ComponentType, "httpClient")
+	httpClient, err := instance.getHttpClient(c)
 	if err != nil {
 		return err
-	}
-	httpClient, isHttpClient := valueOf.(pkgHttp.Client)
-	if !isHttpClient || httpClient == nil {
-		httpClient = http.DefaultClient
-		_ = c.SetValue(ComponentType, "httpClient", httpClient)
 	}
 	res, err := httpClient.Do(httpClientRequest)
 	if err != nil {
@@ -146,6 +139,19 @@ func (instance *GivenHttpRequestStepFactory) doSubmitHttpRequest(c api.ScenarioC
 	return nil
 }
 
+func (instance *GivenHttpRequestStepFactory) getHttpClient(c api.ScenarioContext) (pkgHttp.Client, error) {
+	valueOf, err := c.GetValue(ComponentType, "httpClient")
+	if err != nil {
+		return nil, err
+	}
+	httpClient, isHttpClient := valueOf.(pkgHttp.Client)
+	if !isHttpClient || httpClient == nil {
+		httpClient = http.DefaultClient
+		_ = c.SetValue(ComponentType, "httpClient", httpClient)
+	}
+	return httpClient, nil
+}
+
 func (instance *GivenHttpRequestStepFactory) givenRequestForm(ctx api.StepDefinitionContext) {
 	instance.withFormFile(ctx)
 	instance.withFormEncType(ctx)
@@ -154,60 +160,102 @@ func (instance *GivenHttpRequestStepFactory) givenRequestForm(ctx api.StepDefini
 }
 
 func (instance *GivenHttpRequestStepFactory) withFormEncType(ctx api.StepDefinitionContext) {
-	step := api.StepDefinition{
-		Options:     make([]api.Option, 0),
-		Description: fmt.Sprintf("Specifies the HTTP Form encription type for the current %s", ComponentType),
-	}
-	f := func(c api.ScenarioContext) any {
-		return func(value string) error {
-			req, err := instance.getHttpRequest(c, "")
-			if err != nil {
-				return err
-			}
-			if value == "multipart/form-data" || value == "application/x-www-form-urlencoded" {
-				req.body = nil
-				if req.form == nil {
-					req.form = &Form{}
+	step := instance.createFormStepDefinition(
+		"Specifies the HTTP Form encryption type for the current %s",
+		`http request form enctype is ([^"]*)$`,
+		func(c api.ScenarioContext) any {
+			return func(value string) error {
+				req, err := instance.getHttpRequest(c, "")
+				if err != nil {
+					return err
 				}
-				req.form.encType = value
-				return nil
+				if value == "multipart/form-data" || value == "application/x-www-form-urlencoded" {
+					req.body = nil
+					if req.form == nil {
+						req.form = &Form{}
+					}
+					req.form.encType = value
+					return nil
+				}
+				return fmt.Errorf(`encType "%s"" is not supported for form`, value)
 			}
-			return fmt.Errorf(`encType "%s"" is not supported for form`, value)
-		}
-	}
-	for _, regexp := range createRequestLinePart(`http request form enctype is ([^"]*)$`) {
-		step.Options = append(step.Options, api.Option{
-			Regexp:         regexp,
-			Description:    step.Description,
-			HandlerFactory: f,
-		})
-	}
+		},
+	)
 	ctx.Given(step)
 }
 
 func (instance *GivenHttpRequestStepFactory) withFormAttribute(ctx api.StepDefinitionContext) {
+	step := instance.createFormStepDefinition(
+		"Specifies a HTTP Form attribute for the current %s",
+		`http request form attribute "([a-zA-Z_]+)" is "([^"]+)"$`,
+		func(c api.ScenarioContext) any {
+			return func(name, value string) error {
+				req, err := instance.getHttpRequest(c, "")
+				if err != nil {
+					return err
+				}
+				return instance.doGivenFormAttribute(c, req, name, value, false)
+			}
+		},
+	)
+	ctx.Given(step)
+}
+
+func (instance *GivenHttpRequestStepFactory) withFormFile(ctx api.StepDefinitionContext) {
+	step := instance.createFormStepDefinition(
+		"Specifies a HTTP Form attribute, the specified file , for the current %s",
+		`http request form attribute "([a-zA-Z_]+)" is file://([^"]+)$`,
+		func(c api.ScenarioContext) any {
+			return func(name, value string) error {
+				req, err := instance.getHttpRequest(c, "")
+				if err != nil {
+					return err
+				}
+				return instance.doGivenFormAttribute(c, req, name, "file://"+value, true)
+			}
+		},
+	)
+	ctx.Given(step)
+}
+
+func (instance *GivenHttpRequestStepFactory) withFormAttributes(ctx api.StepDefinitionContext) {
+	step := instance.createFormStepDefinition(
+		"Specifies the HTTP Form attributes for the current %s",
+		`http request form attributes are:$`,
+		func(c api.ScenarioContext) any {
+			return func(c api.ScenarioContext, table *godog.Table) error {
+				req, err := instance.getHttpRequest(c, "")
+				if err != nil {
+					return err
+				}
+				req.body = nil
+				if req.form == nil {
+					req.form = &Form{}
+				}
+				req.form.attributes = make(map[string]any)
+				for _, row := range table.Rows {
+					if err = instance.doGivenFormAttribute(c, req, row.Cells[0].Value, row.Cells[1].Value, true); err != nil {
+						return err
+					}
+				}
+				return nil
+			}
+		},
+	)
+	ctx.Given(step)
+}
+
+func (instance *GivenHttpRequestStepFactory) createFormStepDefinition(description, pattern string, f api.HandlerFactory) api.StepDefinition {
 	step := api.StepDefinition{
 		Options:     make([]api.Option, 0),
-		Description: fmt.Sprintf("Specifies a HTTP Form attribute for the current %s", ComponentType),
-	}
-	f := func(c api.ScenarioContext) any {
-		return func(name, value string) error {
-			req, err := instance.getHttpRequest(c, "")
-			if err != nil {
-				return err
-			}
-			if err = instance.doGivenFormAttribute(c, req, name, value, false); err != nil {
-				return err
-			}
-			return nil
-		}
+		Description: fmt.Sprintf(description, ComponentType),
 	}
 	args := []string{
 		`"([^"]+)"`,
 		fmt.Sprintf(`"%s"`, api.ValueExpression),
 	}
 	for _, arg := range args {
-		for _, regexp := range createRequestLinePart(fmt.Sprintf(`http request form attribute "([a-zA-Z_]+)" is %s$`, arg)) {
+		for _, regexp := range createRequestLinePart(fmt.Sprintf(pattern, arg)) {
 			step.Options = append(step.Options, api.Option{
 				Regexp:         regexp,
 				Description:    step.Description,
@@ -215,74 +263,7 @@ func (instance *GivenHttpRequestStepFactory) withFormAttribute(ctx api.StepDefin
 			})
 		}
 	}
-	ctx.Given(step)
-}
-
-func (instance *GivenHttpRequestStepFactory) withFormFile(ctx api.StepDefinitionContext) {
-	step := api.StepDefinition{
-		Options:     make([]api.Option, 0),
-		Description: fmt.Sprintf("Specifies a HTTP Form attribute, the specified file , for the current %s", ComponentType),
-	}
-	f := func(c api.ScenarioContext) any {
-		return func(name, value string) error {
-			req, err := instance.getHttpRequest(c, "")
-			if err != nil {
-				return err
-			}
-			if err = instance.doGivenFormAttribute(c, req, name, "file://"+value, true); err != nil {
-				return err
-			}
-			return nil
-		}
-	}
-	args := []string{
-		`([^"]+)`,
-		fmt.Sprintf(`%s`, api.ValueExpression),
-	}
-	for _, arg := range args {
-		for _, regexp := range createRequestLinePart(fmt.Sprintf(`http request form attribute "([a-zA-Z_]+)" is file://%s$`, arg)) {
-			step.Options = append(step.Options, api.Option{
-				Regexp:         regexp,
-				Description:    step.Description,
-				HandlerFactory: f,
-			})
-		}
-	}
-	ctx.Given(step)
-}
-
-func (instance *GivenHttpRequestStepFactory) withFormAttributes(ctx api.StepDefinitionContext) {
-	step := api.StepDefinition{
-		Options:     make([]api.Option, 0),
-		Description: fmt.Sprintf("Specifies the HTTP Form attributes for the current %s", ComponentType),
-	}
-	f := func(c api.ScenarioContext) any {
-		return func(table *godog.Table) error {
-			req, err := instance.getHttpRequest(c, "")
-			if err != nil {
-				return err
-			}
-			req.body = nil
-			if req.form == nil {
-				req.form = &Form{}
-			}
-			req.form.attributes = make(map[string]any)
-			for _, row := range table.Rows {
-				if err = instance.doGivenFormAttribute(c, req, row.Cells[0].Value, row.Cells[1].Value, true); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}
-	for _, regexp := range createRequestLinePart(`http request form attributes are:$`) {
-		step.Options = append(step.Options, api.Option{
-			Regexp:         regexp,
-			Description:    step.Description,
-			HandlerFactory: f,
-		})
-	}
-	ctx.Given(step)
+	return step
 }
 
 func (instance *GivenHttpRequestStepFactory) givenRequestBody(ctx api.StepDefinitionContext) {
@@ -304,124 +285,44 @@ func (instance *GivenHttpRequestStepFactory) givenRequestBody(ctx api.StepDefini
 			}
 			description = fmt.Sprintf("Specifies the HTTP Request body, reading from the specified file, for the current %s", ComponentType)
 		}
-		step := api.StepDefinition{
-			Description: description,
-			Options:     make([]api.Option, 0),
-		}
-		args := []string{serverURLRegex, api.PropertyExpression}
-		f := func(c api.ScenarioContext) any {
-			doExec := func(value any) error {
-				req, err := instance.getHttpRequest(c, "")
-				if err != nil {
-					return err
-				}
-				var v any
-				if variation != stepVariations[0] {
-					valueOf, prob := c.Resolve(value.(string))
-					if prob != nil {
-						return prob
-					}
-					x, isString := valueOf.(string)
-					if !isString {
-						return fmt.Errorf(expressionShouldBeStringErrorf, value, valueOf)
-					}
-					v = x
-				}
-
-				binary, err := extract(c, v)
-				if err != nil {
-					return err
-				}
-				req.body = binary
-				return nil
-			}
-			if variation == stepVariations[0] {
-				return func(value *godog.DocString) error {
-					return doExec(value)
-				}
-			}
-			return func(value string) error {
-				return doExec(value)
-			}
-		}
-		for _, prefix := range createRequestLinePart(fmt.Sprintf(`http request body%s`, variation)) {
-			for _, parameter := range args {
-				step.Options = append(step.Options, api.Option{
-					Regexp:         fmt.Sprintf(`%s %s`, prefix, parameter),
-					Description:    step.Description,
-					HandlerFactory: f,
-				})
-			}
-		}
-		ctx.Given(step)
+		instance.createBodyStep(ctx, description, variation, extract)
 	}
 }
 
-func (instance *GivenHttpRequestStepFactory) givenURL(ctx api.StepDefinitionContext) {
+func (instance *GivenHttpRequestStepFactory) createBodyStep(ctx api.StepDefinitionContext, description, variation string, extract func(api.ScenarioContext, any) ([]byte, error)) {
 	step := api.StepDefinition{
-		Options:     make([]api.Option, 0),
-		Description: fmt.Sprintf("Specifies the HTTP Server URL for the current %s", ComponentType),
-	}
-	args := []string{serverURLRegex, api.ValueExpression}
-	for _, prefix := range createRequestLinePart(`http request URL is`) {
-		for _, parameter := range args {
-			step.Options = append(step.Options, api.Option{
-				Regexp:      fmt.Sprintf(`%s %s`, prefix, parameter),
-				Description: step.Description,
-				HandlerFactory: func(c api.ScenarioContext) any {
-					return func(value string) error {
-						req, err := instance.getHttpRequest(c, "")
-						if err != nil {
-							return err
-						}
-						var valueOf any
-						if parameter == args[1] {
-							valueOf, err = c.Resolve(fmt.Sprintf(`{{%s}}`, value))
-							if err != nil {
-								return err
-							}
-						} else {
-							valueOf = value
-						}
-						v, isString := valueOf.(string)
-						if !isString {
-							return fmt.Errorf(expressionShouldBeStringErrorf, value, valueOf)
-						}
-						req.serverURL = v
-						return nil
-					}
-				},
-			})
-		}
-	}
-	ctx.Given(step)
-}
-
-func (instance *GivenHttpRequestStepFactory) givenPath(ctx api.StepDefinitionContext) {
-	step := api.StepDefinition{
-		Description: fmt.Sprintf("Specifies the HTTP path for the current %s", ComponentType),
+		Description: description,
 		Options:     make([]api.Option, 0),
 	}
-	args := []string{relativeURIRegex, api.ValueExpression}
+	args := []string{serverURLRegex, api.PropertyExpression}
 	f := func(c api.ScenarioContext) any {
-		return func(value string) error {
+		return func(value any) error {
 			req, err := instance.getHttpRequest(c, "")
 			if err != nil {
 				return err
 			}
-			valueOf, err := c.Resolve(value)
+			var v any
+			if variation != `:$` {
+				valueOf, prob := c.Resolve(value.(string))
+				if prob != nil {
+					return prob
+				}
+				x, isString := valueOf.(string)
+				if !isString {
+					return fmt.Errorf(expressionShouldBeStringErrorf, value, valueOf)
+				}
+				v = x
+			}
+
+			binary, err := extract(c, v)
 			if err != nil {
 				return err
 			}
-			v, isString := valueOf.(string)
-			if !isString {
-				return fmt.Errorf(expressionShouldBeStringErrorf, value, valueOf)
-			}
-			req.path = "/" + v
+			req.body = binary
 			return nil
 		}
 	}
-	for _, prefix := range createRequestLinePart(`http request path is`) {
+	for _, prefix := range createRequestLinePart(fmt.Sprintf(`http request body%s`, variation)) {
 		for _, parameter := range args {
 			step.Options = append(step.Options, api.Option{
 				Regexp:         fmt.Sprintf(`%s %s`, prefix, parameter),
@@ -431,6 +332,90 @@ func (instance *GivenHttpRequestStepFactory) givenPath(ctx api.StepDefinitionCon
 		}
 	}
 	ctx.Given(step)
+}
+
+func (instance *GivenHttpRequestStepFactory) givenURL(ctx api.StepDefinitionContext) {
+	step := instance.createURLStepDefinition(
+		"Specifies the HTTP Server URL for the current %s",
+		`http request URL is`,
+		serverURLRegex,
+		func(c api.ScenarioContext, regex string) any {
+			return func(value string) error {
+				req, err := instance.getHttpRequest(c, "")
+				if err != nil {
+					return err
+				}
+				var valueOf any
+				if regex == api.ValueExpression {
+					valueOf, err = c.Resolve(fmt.Sprintf(`{{%s}}`, value))
+					if err != nil {
+						return err
+					}
+				} else {
+					valueOf = value
+				}
+				v, isString := valueOf.(string)
+				if !isString {
+					return fmt.Errorf(expressionShouldBeStringErrorf, value, valueOf)
+				}
+				req.serverURL = v
+				return nil
+			}
+		},
+	)
+	ctx.Given(step)
+}
+
+func (instance *GivenHttpRequestStepFactory) givenPath(ctx api.StepDefinitionContext) {
+	step := instance.createURLStepDefinition(
+		"Specifies the HTTP path for the current %s",
+		`http request path is`,
+		relativeURIRegex,
+		func(c api.ScenarioContext, regex string) any {
+			return func(value string) error {
+				req, err := instance.getHttpRequest(c, "")
+				if err != nil {
+					return err
+				}
+				var valueOf any
+				if regex == api.ValueExpression {
+					valueOf, err = c.Resolve(fmt.Sprintf(`{{%s}}`, value))
+					if err != nil {
+						return err
+					}
+				} else {
+					valueOf = value
+				}
+				v, isString := valueOf.(string)
+				if !isString {
+					return fmt.Errorf(expressionShouldBeStringErrorf, value, valueOf)
+				}
+				req.path = "/" + v
+				return nil
+			}
+		},
+	)
+	ctx.Given(step)
+}
+
+func (instance *GivenHttpRequestStepFactory) createURLStepDefinition(description, pattern, regex string, f func(api.ScenarioContext, string) any) api.StepDefinition {
+	step := api.StepDefinition{
+		Options:     make([]api.Option, 0),
+		Description: fmt.Sprintf(description, ComponentType),
+	}
+	args := []string{regex, api.ValueExpression}
+	for _, prefix := range createRequestLinePart(pattern) {
+		for _, parameter := range args {
+			step.Options = append(step.Options, api.Option{
+				Regexp:      fmt.Sprintf(`%s %s`, prefix, parameter),
+				Description: step.Description,
+				HandlerFactory: func(c api.ScenarioContext) any {
+					return f(c, parameter)
+				},
+			})
+		}
+	}
+	return step
 }
 
 func (instance *GivenHttpRequestStepFactory) given(ctx api.StepDefinitionContext) {
@@ -624,14 +609,13 @@ func (instance *GivenHttpRequestStepFactory) setOnBehalfOf(c api.ScenarioContext
 	if err != nil {
 		return err
 	}
-	if bearerToken, isBearerToken := valueOf.(api.BearerToken); isBearerToken {
-		req.headers["Authorization"] = fmt.Sprintf(`Bearer %s`, bearerToken.Value)
-		return nil
+	switch entity := valueOf.(type) {
+	case api.BearerToken:
+		req.headers["Authorization"] = fmt.Sprintf(`Bearer %s`, entity.Value)
+	case api.UsernameAndPassword:
+		req.headers["Authorization"] = base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf(`%s:%s`, entity.Username, entity.Password)))
+	default:
+		return fmt.Errorf(`entity %s isn't supported`, onBehalfOf)
 	}
-	if usernameAndPassword, isUsernameAndPassword := valueOf.(api.UsernameAndPassword); isUsernameAndPassword {
-		value := fmt.Sprintf(`%s:%s`, usernameAndPassword.Username, usernameAndPassword.Password)
-		req.headers["Authorization"] = base64.StdEncoding.EncodeToString([]byte(value))
-		return nil
-	}
-	return fmt.Errorf(`entity %s ins't supported'`, onBehalfOf)
+	return nil
 }
