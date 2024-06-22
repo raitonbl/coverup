@@ -18,12 +18,12 @@ func NewPropertiesEngine(fs fs.ReadFileFS, seq ...string) (ValueResolver, error)
 		return &PropertiesEngine{}, nil
 	}
 	arr := make([]any, len(seq))
-	for _, f := range seq {
+	for index, f := range seq {
 		binary, err := fs.ReadFile(f)
 		if err != nil {
 			return nil, err
 		}
-		arr = append(arr, binary)
+		arr[index] = binary
 	}
 	source := arr[0]
 	others := make([]any, 0)
@@ -41,7 +41,8 @@ func (instance *PropertiesEngine) ValueFrom(x string) (any, error) {
 	if instance.Props == nil {
 		return nil, nil
 	}
-	var valueOf any = instance.Props.Section("").Key(x).Value()
+
+	var valueOf any = instance.Props.Section(ini.DEFAULT_SECTION).Key(x).Value()
 	if valueOf == "" {
 		valueOf = nil
 	}

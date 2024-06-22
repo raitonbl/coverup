@@ -55,14 +55,16 @@ func (instance *ScenarioContextFactory) Configure(c *godog.ScenarioContext) erro
 			_ = sc.doAddGivenComponent(api.EntityComponentType, v, k, true)
 		}
 	}
-	// Assure the original resolvers are passed down
 	if sc.Resolvers == nil {
-		engine, err := NewPropertiesEngine(sc.Filesystem, instance.Properties...)
-		if err != nil {
-			return err
-		}
-		sc.Resolvers[api.PropertiesComponentType] = engine
+		sc.Resolvers = make(map[string]ValueResolver)
 	}
+	// Assure the original resolvers are passed down
+	engine, err := NewPropertiesEngine(sc.Filesystem, instance.Properties...)
+	if err != nil {
+		return err
+	}
+	sc.Resolvers[api.PropertiesComponentType] = engine
+	
 	for _, definition := range instance.steps {
 		for _, option := range definition.Options {
 			if definition.Type == "Given" {

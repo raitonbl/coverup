@@ -362,31 +362,33 @@ func (instance *GivenHttpRequestStepFactory) givenURL(ctx api.StepDefinitionCont
 		Options:     make([]api.Option, 0),
 		Description: fmt.Sprintf("Specifies the HTTP Server URL for the current %s", ComponentType),
 	}
-	args := []string{serverURLRegex, api.PropertyExpression}
-	f := func(c api.ScenarioContext) any {
-		return func(value string) error {
-			req, err := instance.getHttpRequest(c, "")
-			if err != nil {
-				return err
-			}
-			valueOf, err := c.Resolve(value)
-			if err != nil {
-				return err
-			}
-			v, isString := valueOf.(string)
-			if !isString {
-				return fmt.Errorf(expressionShouldBeStringErrorf, value, valueOf)
-			}
-			req.serverURL = v
-			return nil
-		}
-	}
+	args := []string{serverURLRegex, api.ValueExpression}
 	for _, prefix := range createRequestLinePart(`http request URL is`) {
 		for _, parameter := range args {
 			step.Options = append(step.Options, api.Option{
-				Regexp:         fmt.Sprintf(`%s %s`, prefix, parameter),
-				Description:    step.Description,
-				HandlerFactory: f,
+				Regexp:      fmt.Sprintf(`%s %s`, prefix, parameter),
+				Description: step.Description,
+				HandlerFactory: func(c api.ScenarioContext) any {
+					return func(value string) error {
+						req, err := instance.getHttpRequest(c, "")
+						if err != nil {
+							return err
+						}
+						var valueOf any
+						if parameter == args[1] {
+							valueOf, err = c.Resolve(fmt.Sprintf(`{{%s}}`, value))
+							if err != nil {
+								return err
+							}
+						}
+						v, isString := valueOf.(string)
+						if !isString {
+							return fmt.Errorf(expressionShouldBeStringErrorf, value, valueOf)
+						}
+						req.serverURL = v
+						return nil
+					}
+				},
 			})
 		}
 	}

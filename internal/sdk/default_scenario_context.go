@@ -23,9 +23,6 @@ func (d *DefaultScenarioContext) GetFS() fs.ReadFileFS {
 }
 
 func (d *DefaultScenarioContext) Resolve(src string) (any, error) {
-	// [objectType].[objectId].<property>
-	// DynamodbItem.<id>.<property>
-	// HttpRequest.<name>.<property>
 	matches := valueRegexp.FindAllStringSubmatch(src, -1)
 	if len(matches) == 0 {
 		return src, nil
@@ -57,9 +54,13 @@ func (d *DefaultScenarioContext) GetGivenComponent(componentType, alias string) 
 	return d.References[componentType], nil
 }
 
-func (d *DefaultScenarioContext) getValueFromExpression(key, expr string, cache map[string]string) (string, error) {
+func (d *DefaultScenarioContext) getValueFromExpression(key, n string, cache map[string]string) (string, error) {
 	if fromCache, containsKey := cache[key]; containsKey {
 		return fromCache, nil
+	}
+	expr := n
+	if strings.HasPrefix(expr, "{{") && strings.HasSuffix(expr, "}}") {
+		expr = expr[2 : len(expr)-2]
 	}
 	indexOf := strings.Index(expr, ".")
 	componentType := expr[:indexOf]

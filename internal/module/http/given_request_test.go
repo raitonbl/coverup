@@ -189,7 +189,7 @@ func TestGivenRequestWhenPropertiesURL(t *testing.T) {
 			And the http request headers are:
 				| content-type | application/json |
 			And the http request method is GET
-			And http request URL is {{ `+api.PropertiesComponentType+`.server.url }}
+			And http request URL is {{`+api.PropertiesComponentType+`.server.url}}
 			And http request path is /items/`+id+` 
 			When {{`+api.EntityComponentType+`.default}} submits {{`+ComponentType+`.GetItems}}
 			Then http response status code should be 200`),
