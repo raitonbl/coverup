@@ -380,6 +380,8 @@ func (instance *GivenHttpRequestStepFactory) givenURL(ctx api.StepDefinitionCont
 							if err != nil {
 								return err
 							}
+						} else {
+							valueOf = value
 						}
 						v, isString := valueOf.(string)
 						if !isString {
