@@ -230,7 +230,7 @@ func ExecGivenRequest(t *testing.T, definition []byte, givenRequestOpts GivenReq
 			_ = context.SetValue(ComponentType, "httpClient", givenRequestOpts.httpClient)
 		},
 	}
-	OnV3(ctx)
+	On(ctx)
 	suite := godog.TestSuite{
 		TestSuiteInitializer: nil,
 		Options: &godog.Options{
