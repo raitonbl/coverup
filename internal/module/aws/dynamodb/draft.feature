@@ -23,6 +23,6 @@ Feature: Design
                       "promo-code": "raitonbl.com"
                   }
           """
-    Then Fetch item GetItem from DynamodbTable {{Properties.DynamoDb.name}}
-    Then  the http response body $.benefit is equal to {{DynamoDbItem.GetItem.benefit}}
-
+    And DynamoDb Table  {{Properties.DynamoDb.name}} has item(id= "ac522d71-13a4-4287-9816-7f5c4b21b54d" )
+    And DynamoDb Table  {{Properties.DynamoDb.name}} has item(id= "ac522d71-13a4-4287-9816-7f5c4b21b54d" ), known as GetItem
+    And  the http response body $.benefit is equal to {{DynamoDbItem.GetItem.benefit}}

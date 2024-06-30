@@ -1,4 +1,4 @@
-package dynamodb
+package aws
 
 import "github.com/raitonbl/coverup/pkg/api"
 
