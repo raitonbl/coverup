@@ -15,84 +15,57 @@ type GetItemResponse struct {
 
 func (instance *GetItemResponse) ValueFrom(location string) (any, error) {
 	if instance.properties == nil {
-		instance.properties = make(map[string]any)
+		value, err := getGolangValueFrom(&types.AttributeValueMemberM{Value: instance.sdkAttributes})
+		if err != nil {
+			return nil, err
+		}
+		instance.properties = value.(map[string]any)
 	}
-	value, hasValue := instance.properties[location]
-	if hasValue {
-		return value, nil
-	}
-	key, subPath := instance.getKeyAndSubPath(location)
-	var v any
-	var err error
-	if arrayIndex := instance.parseArrayIndex(key); arrayIndex != -1 {
-		t := key[:strings.Index(key, "[")]
-		v, err = instance.getArrayValue(instance.sdkAttributes[t], arrayIndex, subPath)
-	} else {
-		v, err = getGolangValueFrom(instance.sdkAttributes[key])
-	}
-	if err != nil {
-		return nil, err
-	}
-	subPathValue, err := instance.getSubPathValue(v, subPath)
-	if err == nil {
-		instance.properties[location] = subPathValue
-	}
-	return subPathValue, err
+
+	return getValueFromPath(instance.properties, location)
 }
 
-func (instance *GetItemResponse) getSubPathValue(value any, location string) (any, error) {
-	if location == "" {
-		return value, nil
-	}
-	key, subPath := instance.getKeyAndSubPath(location)
-	if arrayIndex := instance.parseArrayIndex(key); arrayIndex != -1 {
-		return instance.getArrayValue(value, arrayIndex, subPath)
-	}
-	return instance.getObjectValue(value, key, subPath)
-}
+func getValueFromPath(data map[string]any, path string) (any, error) {
+	elements := strings.Split(path, ".")
+	var current interface{} = data
 
-func (instance *GetItemResponse) getObjectValue(value any, key string, subPath string) (any, error) {
-	m, isMap := value.(map[string]any)
-	if !isMap {
-		return nil, fmt.Errorf("cannot access nested value: %v is not a map", value)
-	}
-	subPathValue, hasValue := m[key]
-	if !hasValue {
-		return nil, fmt.Errorf("key %s does not exist in map", key)
-	}
-	return instance.getSubPathValue(subPathValue, subPath)
-}
-
-func (instance *GetItemResponse) getArrayValue(value any, arrayIndex int, subPath string) (any, error) {
-	arr, isArray := value.([]any)
-	if !isArray {
-		return nil, fmt.Errorf("cannot access array value: %v is not an array", value)
-	}
-	if arrayIndex >= len(arr) {
-		return nil, fmt.Errorf("index %d out of bounds for array", arrayIndex)
-	}
-	return instance.getSubPathValue(arr[arrayIndex], subPath)
-}
-
-func (instance *GetItemResponse) getKeyAndSubPath(location string) (string, string) {
-	indexOf := strings.Index(location, ".")
-	if indexOf == -1 {
-		return location, ""
-	}
-	return location[:indexOf], location[indexOf+1:]
-}
-
-func (instance *GetItemResponse) parseArrayIndex(key string) int {
-	if strings.HasSuffix(key, "]") {
-		start := strings.Index(key, "[")
-		if start != -1 {
-			index, err := strconv.Atoi(key[start+1 : len(key)-1])
-			if err == nil {
-				return index
+	for _, element := range elements {
+		if currentMap, ok := current.(map[string]interface{}); ok {
+			if strings.Contains(element, "[") && strings.Contains(element, "]") {
+				// Handle arrays
+				arrayIndex := strings.Index(element, "[")
+				key := element[:arrayIndex]
+				indexStr := element[arrayIndex+1 : len(element)-1]
+				index, err := strconv.Atoi(indexStr)
+				if err != nil {
+					return nil, err
+				}
+				array, ok := currentMap[key].([]interface{})
+				if !ok {
+					return nil, nil
+				}
+				if index >= len(array) {
+					return nil, fmt.Errorf("index out of range for %s[%d]", key, index)
+				}
+				current = array[index]
+			} else {
+				current = currentMap[element]
 			}
+		} else if currentArray, ok := current.([]interface{}); ok {
+			index, err := strconv.Atoi(element)
+			if err != nil {
+				return nil, fmt.Errorf("expected an integer index, got %s", element)
+			}
+
+			if index >= len(currentArray) {
+				return nil, fmt.Errorf("index out of range for array")
+			}
+			current = currentArray[index]
+		} else {
+			return nil, nil
 		}
 	}
-	return -1
+	return current, nil
 }
 
 func getDynamoDbAttributeValueFrom(value any) (types.AttributeValue, error) {
@@ -143,6 +116,20 @@ func getDynamoDbAttributeValueFrom(value any) (types.AttributeValue, error) {
 
 func getGolangValueFrom(attr types.AttributeValue) (any, error) {
 	switch v := attr.(type) {
+	case *types.AttributeValueMemberSS:
+		return v.Value, nil
+	case *types.AttributeValueMemberNS:
+		seq := make([]float64, len(v.Value))
+		for index, value := range v.Value {
+			num, err := strconv.ParseFloat(value, 64)
+			if err != nil {
+				panic(fmt.Sprintf("Failed to parse number: %v", err))
+			}
+			seq[index] = num
+		}
+		return seq, nil
+	case *types.AttributeValueMemberBS:
+		return v.Value, nil
 	case *types.AttributeValueMemberS:
 		return v.Value, nil
 	case *types.AttributeValueMemberN:

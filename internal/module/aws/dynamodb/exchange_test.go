@@ -71,8 +71,9 @@ func TestInvalidLocation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.location, func(t *testing.T) {
-			_, err := response.ValueFrom(tt.location)
-			assert.Error(t, err)
+			valueOf, err := response.ValueFrom(tt.location)
+			assert.Nil(t, err)
+			assert.Nil(t, valueOf)
 		})
 	}
 }
