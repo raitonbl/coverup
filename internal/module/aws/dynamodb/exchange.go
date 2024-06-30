@@ -22,7 +22,14 @@ func (instance *GetItemResponse) ValueFrom(location string) (any, error) {
 		return value, nil
 	}
 	key, subPath := instance.getKeyAndSubPath(location)
-	v, err := getGolangValueFrom(instance.sdkAttributes[key])
+	var v any
+	var err error
+	if arrayIndex := instance.parseArrayIndex(key); arrayIndex != -1 {
+		t := key[:strings.Index(key, "[")]
+		v, err = instance.getArrayValue(instance.sdkAttributes[t], arrayIndex, subPath)
+	} else {
+		v, err = getGolangValueFrom(instance.sdkAttributes[key])
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -39,15 +46,12 @@ func (instance *GetItemResponse) getSubPathValue(value any, location string) (an
 	}
 	key, subPath := instance.getKeyAndSubPath(location)
 	if arrayIndex := instance.parseArrayIndex(key); arrayIndex != -1 {
-		arr, isArray := value.([]any)
-		if !isArray {
-			return nil, fmt.Errorf("cannot access array value: %v is not an array", value)
-		}
-		if arrayIndex >= len(arr) {
-			return nil, fmt.Errorf("index %d out of bounds for array", arrayIndex)
-		}
-		return instance.getSubPathValue(arr[arrayIndex], subPath)
+		return instance.getArrayValue(value, arrayIndex, subPath)
 	}
+	return instance.getObjectValue(value, key, subPath)
+}
+
+func (instance *GetItemResponse) getObjectValue(value any, key string, subPath string) (any, error) {
 	m, isMap := value.(map[string]any)
 	if !isMap {
 		return nil, fmt.Errorf("cannot access nested value: %v is not a map", value)
@@ -57,6 +61,17 @@ func (instance *GetItemResponse) getSubPathValue(value any, location string) (an
 		return nil, fmt.Errorf("key %s does not exist in map", key)
 	}
 	return instance.getSubPathValue(subPathValue, subPath)
+}
+
+func (instance *GetItemResponse) getArrayValue(value any, arrayIndex int, subPath string) (any, error) {
+	arr, isArray := value.([]any)
+	if !isArray {
+		return nil, fmt.Errorf("cannot access array value: %v is not an array", value)
+	}
+	if arrayIndex >= len(arr) {
+		return nil, fmt.Errorf("index %d out of bounds for array", arrayIndex)
+	}
+	return instance.getSubPathValue(arr[arrayIndex], subPath)
 }
 
 func (instance *GetItemResponse) getKeyAndSubPath(location string) (string, string) {
