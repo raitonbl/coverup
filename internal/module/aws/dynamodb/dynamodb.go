@@ -115,7 +115,7 @@ func (instance *StepFactory) createGetItemRequest(c api.ScenarioContext, table s
 		if err != nil {
 			return nil, fmt.Errorf(`error caught during %s mapping into dynamoDbAttribute. caused by:\n%v`, name, err)
 		}
-		value, err := createDynamoDbAttributeFrom(rawValue)
+		value, err := getDynamoDbAttributeValueFrom(rawValue)
 		if err != nil {
 			return nil, fmt.Errorf(`error caught during %s mapping into dynamoDbAttribute. caused by:\n%v`, name, err)
 		}
