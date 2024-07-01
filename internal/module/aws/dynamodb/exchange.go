@@ -9,66 +9,78 @@ import (
 )
 
 type GetItemResponse struct {
-	properties    map[string]any
+	cache         map[string]interface{}
+	properties    map[string]interface{}
 	sdkAttributes map[string]types.AttributeValue
 }
 
-func (instance *GetItemResponse) ValueFrom(location string) (any, error) {
+func (instance *GetItemResponse) ValueFrom(location string) (interface{}, error) {
+	if instance.cache == nil {
+		instance.cache = make(map[string]interface{})
+	}
+	// Check if the value is already in the cache
+	if value, found := instance.cache[location]; found {
+		return value, nil
+	}
 	if instance.properties == nil {
 		value, err := getGolangValueFrom(&types.AttributeValueMemberM{Value: instance.sdkAttributes})
 		if err != nil {
 			return nil, err
 		}
-		instance.properties = value.(map[string]any)
+		instance.sdkAttributes = nil
+		instance.properties = value.(map[string]interface{})
 	}
-
-	return getValueFromPath(instance.properties, location)
+	value, err := doValueFrom(instance.properties, location)
+	if err != nil {
+		return nil, err
+	}
+	// Store the value in the cache
+	instance.cache[location] = value
+	return value, nil
 }
 
-func getValueFromPath(data map[string]any, path string) (any, error) {
+func doValueFrom(data map[string]interface{}, path string) (interface{}, error) {
 	elements := strings.Split(path, ".")
 	var current interface{} = data
-
 	for _, element := range elements {
-		if currentMap, ok := current.(map[string]interface{}); ok {
-			if strings.Contains(element, "[") && strings.Contains(element, "]") {
-				// Handle arrays
-				arrayIndex := strings.Index(element, "[")
-				key := element[:arrayIndex]
-				indexStr := element[arrayIndex+1 : len(element)-1]
-				index, err := strconv.Atoi(indexStr)
-				if err != nil {
-					return nil, err
-				}
-				array, ok := currentMap[key].([]interface{})
-				if !ok {
+		if strings.Contains(element, "[") && strings.Contains(element, "]") {
+			current, element = parseArrayElement(current, element)
+			if current == nil {
+				return nil, nil
+			}
+		} else {
+			if currentMap, ok := current.(map[string]interface{}); ok {
+				current = currentMap[element]
+				if current == nil {
 					return nil, nil
 				}
-				if index >= len(array) {
-					return nil, fmt.Errorf("index out of range for %s[%d]", key, index)
-				}
-				current = array[index]
 			} else {
-				current = currentMap[element]
+				return nil, nil
 			}
-		} else if currentArray, ok := current.([]interface{}); ok {
-			index, err := strconv.Atoi(element)
-			if err != nil {
-				return nil, fmt.Errorf("expected an integer index, got %s", element)
-			}
-
-			if index >= len(currentArray) {
-				return nil, fmt.Errorf("index out of range for array")
-			}
-			current = currentArray[index]
-		} else {
-			return nil, nil
 		}
 	}
 	return current, nil
 }
 
-func getDynamoDbAttributeValueFrom(value any) (types.AttributeValue, error) {
+func parseArrayElement(current interface{}, element string) (interface{}, string) {
+	arrayIndex := strings.Index(element, "[")
+	key := element[:arrayIndex]
+	indexStr := element[arrayIndex+1 : len(element)-1]
+	index, err := strconv.Atoi(indexStr)
+	if err != nil {
+		return nil, element
+	}
+	if currentMap, isObject := current.(map[string]interface{}); isObject {
+		if array, hasValue := currentMap[key]; hasValue {
+			if index >= 0 && index < reflect.ValueOf(array).Len() {
+				return reflect.ValueOf(array).Index(index).Interface(), ""
+			}
+		}
+	}
+	return nil, element
+}
+
+func getDynamoDbAttributeValueFrom(value interface{}) (types.AttributeValue, error) {
 	v := reflect.ValueOf(value)
 	switch v.Kind() {
 	case reflect.String:
@@ -114,57 +126,71 @@ func getDynamoDbAttributeValueFrom(value any) (types.AttributeValue, error) {
 	}
 }
 
-func getGolangValueFrom(attr types.AttributeValue) (any, error) {
+func getGolangValueFrom(attr types.AttributeValue) (interface{}, error) {
 	switch v := attr.(type) {
-	case *types.AttributeValueMemberSS:
-		return v.Value, nil
+	case *types.AttributeValueMemberSS, *types.AttributeValueMemberBS:
+		return v.(*types.AttributeValueMemberSS).Value, nil
 	case *types.AttributeValueMemberNS:
-		seq := make([]float64, len(v.Value))
-		for index, value := range v.Value {
-			num, err := strconv.ParseFloat(value, 64)
-			if err != nil {
-				panic(fmt.Sprintf("Failed to parse number: %v", err))
-			}
-			seq[index] = num
-		}
-		return seq, nil
-	case *types.AttributeValueMemberBS:
-		return v.Value, nil
+		return getGolangFloat64ArrayFrom(v.Value)
 	case *types.AttributeValueMemberS:
 		return v.Value, nil
 	case *types.AttributeValueMemberN:
-		num, err := strconv.ParseFloat(v.Value, 64)
-		if err != nil {
-			panic(fmt.Sprintf("Failed to parse number: %v", err))
-		}
-		return num, nil
+		return getGolangFloat64From(v.Value)
 	case *types.AttributeValueMemberBOOL:
 		return v.Value, nil
 	case *types.AttributeValueMemberB:
 		return v.Value, nil
 	case *types.AttributeValueMemberL:
-		values := make([]interface{}, len(v.Value))
-		for i, item := range v.Value {
-			t, err := getGolangValueFrom(item)
-			if err != nil {
-				return nil, err
-			}
-			values[i] = t
-		}
-		return values, nil
+		return getGolangArrayFrom(v.Value)
 	case *types.AttributeValueMemberM:
-		m := make(map[string]interface{})
-		for key, item := range v.Value {
-			t, err := getGolangValueFrom(item)
-			if err != nil {
-				return nil, err
-			}
-			m[key] = t
-		}
-		return m, nil
+		return getGolangMapFrom(v.Value)
 	case *types.AttributeValueMemberNULL:
 		return nil, nil
 	default:
 		return nil, fmt.Errorf("unsupported attribute value type: %T", attr)
 	}
+}
+
+func getGolangFloat64From(value string) (interface{}, error) {
+	num, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse number: %v", err)
+	}
+	return num, nil
+}
+
+func getGolangFloat64ArrayFrom(values []string) (interface{}, error) {
+	seq := make([]float64, len(values))
+	for index, value := range values {
+		num, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse number: %v", err)
+		}
+		seq[index] = num
+	}
+	return seq, nil
+}
+
+func getGolangArrayFrom(values []types.AttributeValue) (interface{}, error) {
+	parsed := make([]interface{}, len(values))
+	for i, item := range values {
+		t, err := getGolangValueFrom(item)
+		if err != nil {
+			return nil, err
+		}
+		parsed[i] = t
+	}
+	return parsed, nil
+}
+
+func getGolangMapFrom(value map[string]types.AttributeValue) (interface{}, error) {
+	m := make(map[string]interface{})
+	for key, item := range value {
+		t, err := getGolangValueFrom(item)
+		if err != nil {
+			return nil, err
+		}
+		m[key] = t
+	}
+	return m, nil
 }
