@@ -6,7 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/raitonbl/coverup/internal/module/aws/session"
+	"github.com/raitonbl/coverup/internal/module/aws/config"
 	"github.com/raitonbl/coverup/pkg/api"
 	"strings"
 )
@@ -56,7 +56,7 @@ func (instance *StepFactory) createDynamoDbOperationHandlerFactory(isGetOperatio
 }
 
 func (instance *StepFactory) doDynamoDbGetItem(c api.ScenarioContext, name, definition, alias string) error {
-	clientRegistry, err := c.GetGivenComponent(session.ClientRegistryComponentType, "")
+	clientRegistry, err := c.GetGivenComponent(config.ClientRegistryComponentType, "")
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (instance *StepFactory) doDynamoDbGetItem(c api.ScenarioContext, name, defi
 	if !isString {
 		return fmt.Errorf("no such dynamoDb Table %v", t)
 	}
-	dynamoDbClient, err := clientRegistry.(session.ClientRegistry).GetClient("", dynamoDbTable)
+	dynamoDbClient, err := clientRegistry.(config.ClientRegistry).GetClient("", dynamoDbTable)
 	if err != nil {
 		return err
 	}

@@ -1,4 +1,4 @@
-package session
+package config
 
 import "github.com/raitonbl/coverup/pkg/api"
 

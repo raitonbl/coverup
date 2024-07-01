@@ -37,11 +37,14 @@ func NewPropertiesEngine(fs fs.ReadFileFS, seq ...string) (ValueResolver, error)
 	return &PropertiesEngine{Props: props}, nil
 }
 
+func (instance *PropertiesEngine) ToMap() map[string]string {
+	return nil
+}
+
 func (instance *PropertiesEngine) ValueFrom(x string) (any, error) {
 	if instance.Props == nil {
 		return nil, nil
 	}
-
 	var valueOf any = instance.Props.Section(ini.DEFAULT_SECTION).Key(x).Value()
 	if valueOf == "" {
 		valueOf = nil
