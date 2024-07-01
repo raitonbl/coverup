@@ -3,6 +3,8 @@ package dynamodb
 import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/stretchr/testify/assert"
+	"reflect"
+	"strconv"
 	"testing"
 )
 
@@ -45,6 +47,7 @@ func TestValueFrom(t *testing.T) {
 		{"console_opts.template", "default"},
 		{"console_opts.screen_mode", "dark"},
 		{"console_opts.zoom_in", 75.0},
+		{"tags[0]", "Platform=Golang"},
 	}
 
 	for _, tt := range tests {
@@ -74,6 +77,95 @@ func TestInvalidLocation(t *testing.T) {
 			valueOf, err := response.ValueFrom(tt.location)
 			assert.Nil(t, err)
 			assert.Nil(t, valueOf)
+		})
+	}
+}
+
+func TestGetDynamoDbAttributeValueFrom(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected types.AttributeValue
+		hasError bool
+	}{
+		{
+			name:     "String",
+			input:    "test",
+			expected: &types.AttributeValueMemberS{Value: "test"},
+			hasError: false,
+		},
+		{
+			name:     "Int",
+			input:    123,
+			expected: &types.AttributeValueMemberN{Value: "123"},
+			hasError: false,
+		},
+		{
+			name:     "Float",
+			input:    123.456,
+			expected: &types.AttributeValueMemberN{Value: strconv.FormatFloat(123.456, 'f', -1, 64)},
+			hasError: false,
+		},
+		{
+			name:     "Bool",
+			input:    true,
+			expected: &types.AttributeValueMemberBOOL{Value: true},
+			hasError: false,
+		},
+		{
+			name:     "ByteSlice",
+			input:    []byte{1, 2, 3},
+			expected: &types.AttributeValueMemberB{Value: []byte{1, 2, 3}},
+			hasError: false,
+		},
+		{
+			name:  "Slice",
+			input: []interface{}{"a", 1, true},
+			expected: &types.AttributeValueMemberL{Value: []types.AttributeValue{
+				&types.AttributeValueMemberS{Value: "a"},
+				&types.AttributeValueMemberN{Value: "1"},
+				&types.AttributeValueMemberBOOL{Value: true},
+			}},
+			hasError: false,
+		},
+		{
+			name:  "Map",
+			input: map[string]interface{}{"a": "1", "b": 2, "c": false},
+			expected: &types.AttributeValueMemberM{Value: map[string]types.AttributeValue{
+				"a": &types.AttributeValueMemberS{Value: "1"},
+				"b": &types.AttributeValueMemberN{Value: "2"},
+				"c": &types.AttributeValueMemberBOOL{Value: false},
+			}},
+			hasError: false,
+		},
+		{
+			name:     "Pointer",
+			input:    func() *int { i := 123; return &i }(),
+			expected: &types.AttributeValueMemberN{Value: "123"},
+			hasError: false,
+		},
+		{
+			name:     "NilPointer",
+			input:    (*int)(nil),
+			expected: &types.AttributeValueMemberNULL{Value: true},
+			hasError: false,
+		},
+		{
+			name:     "UnsupportedType",
+			input:    struct{}{},
+			expected: &types.AttributeValueMemberNULL{Value: true},
+			hasError: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := getDynamoDbAttributeValueFrom(tt.input)
+			if (err != nil) != tt.hasError {
+				t.Errorf("expected error: %v, got: %v", tt.hasError, err)
+			}
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("expected: %v, got: %v", tt.expected, result)
+			}
 		})
 	}
 }
